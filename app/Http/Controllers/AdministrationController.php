@@ -7,6 +7,8 @@ use App\Models\Resident;
 use App\Models\RtArea;
 use App\Models\RwArea;
 use App\Models\User;
+use App\Services\AreaAccess;
+use App\Services\UserSessions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,17 +17,30 @@ use Illuminate\View\View;
 
 class AdministrationController extends Controller
 {
-    public function index(): View
+    public function index(Request $request, AreaAccess $access): View
     {
+        $actor = $request->user();
+        $rwAreas = RwArea::query();
+        if ($actor->hasRole('rw_operator')) {
+            $rwAreas->whereKey($actor->rw_area_id ?? 0);
+        } elseif ($actor->hasRole('rt_operator')) {
+            $rwAreas->whereHas('rtAreas', fn ($query) => $query->whereKey($actor->rt_area_id ?? 0));
+        }
+
         return view('management.administration', [
-            'rwAreas' => RwArea::query()->with('rtAreas')->orderBy('name')->get(),
-            'users' => User::query()->with(['rwArea:id,name', 'rtArea:id,name'])->orderBy('name')->paginate(20),
+            'rwAreas' => $rwAreas->with(['rtAreas' => function ($query) use ($actor) {
+                if ($actor->hasRole('rt_operator')) {
+                    $query->whereKey($actor->rt_area_id ?? 0);
+                }
+            }])->orderBy('name')->get(),
+            'users' => $access->manageableUsers($actor)->with(['rwArea:id,name', 'rtArea:id,name'])->orderBy('name')->orderBy('id')->paginate(20),
             'unlinkedResidents' => Resident::query()
                 ->whereNull('user_id')
+                ->whereHas('household', fn ($query) => $query->whereIn('rt_area_id', $access->manageableRtAreas($actor)->select('id')))
                 ->with('household:id,household_code,rt_area_id')
                 ->orderBy('full_name')
-                ->limit(100)
-                ->get(['id', 'household_id', 'full_name']),
+                ->orderBy('id')
+                ->simplePaginate(50, ['id', 'household_id', 'full_name'], 'resident_page'),
         ]);
     }
 
@@ -66,8 +81,12 @@ class AdministrationController extends Controller
         return back()->with('status', 'Wilayah RT berhasil dibuat.');
     }
 
-    public function storeUser(Request $request): RedirectResponse
+    public function storeUser(Request $request, AreaAccess $access): RedirectResponse
     {
+        if (is_string($request->input('username'))) {
+            $request->merge(['username' => mb_strtolower($request->input('username'))]);
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
             'username' => ['required', 'string', 'alpha_dash:ascii', 'max:80', 'unique:users,username'],
@@ -81,6 +100,14 @@ class AdministrationController extends Controller
         $rwAreaId = $data['rw_area_id'] ?? null;
         $rtAreaId = $data['rt_area_id'] ?? null;
         $residentId = $data['resident_id'] ?? null;
+        $actor = $request->user();
+
+        abort_unless(
+            ($actor->hasRole('super_admin'))
+                || ($actor->hasRole('rw_operator') && in_array($data['role'], ['rt_operator', 'resident'], true))
+                || ($actor->hasRole('rt_operator') && $data['role'] === 'resident'),
+            403
+        );
 
         if ($data['role'] === 'rw_operator' && (! $rwAreaId || $rtAreaId || $residentId)) {
             throw ValidationException::withMessages([
@@ -100,7 +127,23 @@ class AdministrationController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($request, $data, $rwAreaId, $rtAreaId, $residentId) {
+        if ($rtAreaId) {
+            abort_unless($access->canManageRt($actor, (int) $rtAreaId), 403);
+        }
+
+        DB::transaction(function () use ($request, $data, $rwAreaId, $rtAreaId, $residentId, $actor, $access) {
+            $resident = null;
+            if ($residentId) {
+                $resident = Resident::query()->with('household')->lockForUpdate()->findOrFail($residentId);
+                abort_unless($resident->household && $access->canAccessHousehold($actor, $resident->household), 403);
+
+                if ($resident->user_id) {
+                    throw ValidationException::withMessages([
+                        'resident_id' => 'Data warga tersebut sudah memiliki akun.',
+                    ]);
+                }
+            }
+
             $user = User::query()->create([
                 'name' => $data['name'],
                 'username' => mb_strtolower($data['username']),
@@ -109,17 +152,10 @@ class AdministrationController extends Controller
                 'rw_area_id' => $rwAreaId,
                 'rt_area_id' => $rtAreaId,
                 'password' => $data['password'],
+                'must_change_password' => true,
             ]);
 
-            if ($residentId) {
-                $resident = Resident::query()->lockForUpdate()->findOrFail($residentId);
-
-                if ($resident->user_id) {
-                    throw ValidationException::withMessages([
-                        'resident_id' => 'Data warga tersebut sudah memiliki akun.',
-                    ]);
-                }
-
+            if ($resident) {
                 $resident->update(['user_id' => $user->id]);
             }
 
@@ -129,21 +165,48 @@ class AdministrationController extends Controller
         return back()->with('status', 'Akun berhasil dibuat. Berikan nama pengguna dan kata sandi kepada pemilik akun melalui kanal yang aman.');
     }
 
-    public function setUserStatus(Request $request, User $user): RedirectResponse
+    public function setUserStatus(Request $request, User $user, AreaAccess $access, UserSessions $sessions): RedirectResponse
     {
-        abort_if($request->user()->is($user), 422, 'Administrator tidak dapat menonaktifkan akunnya sendiri.');
+        abort_unless($access->manageableUsers($request->user())->whereKey($user->id)->exists(), 403);
 
         $data = $request->validate([
             'is_active' => ['required', 'boolean'],
         ]);
 
-        $user->update(['is_active' => (bool) $data['is_active']]);
-        AuditEvent::record(
-            $request->user(),
-            $user->is_active ? 'user.activated' : 'user.deactivated',
-            $user
-        );
+        DB::transaction(function () use ($request, $user, $data, $sessions) {
+            $user->update(['is_active' => (bool) $data['is_active']]);
+            if (! $user->is_active) {
+                $sessions->revoke($user);
+            }
+            AuditEvent::record($request->user(), $user->is_active ? 'user.activated' : 'user.deactivated', $user);
+        });
 
         return back()->with('status', 'Status akun berhasil diperbarui.');
+    }
+
+    public function updateUser(Request $request, User $user, AreaAccess $access): RedirectResponse
+    {
+        abort_unless($access->manageableUsers($request->user())->whereKey($user->id)->exists(), 403);
+        $data = $request->validate(['name' => ['required', 'string', 'max:160']]);
+        DB::transaction(function () use ($request, $user, $data) {
+            $user->update($data);
+            AuditEvent::record($request->user(), 'user.updated', $user);
+        });
+
+        return back()->with('status', 'Nama akun berhasil diperbarui.');
+    }
+
+    public function resetPassword(Request $request, User $user, AreaAccess $access, UserSessions $sessions): RedirectResponse
+    {
+        abort_unless($access->manageableUsers($request->user())->whereKey($user->id)->exists(), 403);
+        $data = $request->validate(['password' => ['required', 'string', 'min:12', 'max:255', 'confirmed']]);
+
+        DB::transaction(function () use ($request, $user, $data, $sessions) {
+            $user->forceFill(['password' => $data['password'], 'must_change_password' => true, 'remember_token' => null])->save();
+            $sessions->revoke($user);
+            AuditEvent::record($request->user(), 'user.password_reset', $user);
+        });
+
+        return back()->with('status', 'Kata sandi direset. Sampaikan kata sandi sementara melalui kanal yang aman.');
     }
 }

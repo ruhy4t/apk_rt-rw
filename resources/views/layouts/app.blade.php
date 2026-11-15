@@ -19,10 +19,12 @@
                 <a class="text-slate-700 hover:text-emerald-800" href="{{ route('home') }}">Beranda</a>
                 @auth
                     <a class="text-slate-700 hover:text-emerald-800" href="{{ route('dashboard') }}">Area warga</a>
+                    <a class="text-slate-700 hover:text-emerald-800" href="{{ route('profile.edit') }}">Profil</a>
                     @if (auth()->user()->hasRole('super_admin'))
                         <a class="text-slate-700 hover:text-emerald-800" href="{{ route('admin.setup') }}">Pengaturan</a>
                     @endif
                     @if (auth()->user()->hasRole('super_admin', 'rw_operator', 'rt_operator'))
+                        <a class="text-slate-700 hover:text-emerald-800" href="{{ route('users.index') }}">Pengguna</a>
                         <a class="text-slate-700 hover:text-emerald-800" href="{{ route('residents.index') }}">Data warga</a>
                         <a class="text-slate-700 hover:text-emerald-800" href="{{ route('announcements.index') }}">Pengumuman</a>
                         <a class="text-slate-700 hover:text-emerald-800" href="{{ route('agenda.index') }}">Agenda</a>

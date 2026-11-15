@@ -29,6 +29,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('auth.password_fingerprint', hash('sha256', $request->user()->getAuthPassword()));
 
         return redirect()->intended(route('dashboard'));
     }
