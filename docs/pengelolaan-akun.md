@@ -4,7 +4,6 @@
 - Petugas RW mengelola petugas RT dan warga dalam RW-nya.
 - Petugas RT mengelola warga dalam RT-nya. Warga tidak mengelola akun lain.
 - Nama pengguna tetap. Setiap pengguna dapat mengubah nama dan kata sandinya sendiri.
-- Buka **Menu > Profil dan kata sandi** untuk profil, atau **Menu > Pengguna** untuk pengelolaan akun sesuai hak akses.
 - Kata sandi awal dan hasil reset harus diganti saat login berikutnya. Sampaikan kata sandi sementara melalui kanal yang aman.
 - Reset atau penonaktifan mencabut sesi database akun yang bersangkutan. Perubahan kata sandi sendiri mencabut sesi lain. Fitur ini memerlukan driver sesi `database` pada koneksi database aplikasi.
 

@@ -7,14 +7,12 @@ use App\Http\Controllers\AssetController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanceController;
-use App\Http\Controllers\MyHouseholdController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\ResidentController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\StoredFileController;
 use App\Http\Middleware\EnsurePasswordChanged;
-use App\Http\Middleware\PreventPrivateCaching;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', PublicHomeController::class)->name('home');
@@ -26,7 +24,7 @@ Route::middleware('guest')->group(function () {
         ->name('login.store');
 });
 
-Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivateCaching::class])->group(function () {
+Route::middleware(['auth', 'active', EnsurePasswordChanged::class])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -42,12 +40,8 @@ Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivat
         Route::patch('/users/{user}/password', [AdministrationController::class, 'resetPassword'])
             ->middleware('throttle:5,1')->name('users.password');
         Route::get('/residents', [ResidentController::class, 'index'])->name('residents.index');
-        Route::post('/households', [ResidentController::class, 'storeHousehold'])->middleware('throttle:10,1')->name('households.store');
-        Route::patch('/households/{household}/identity', [ResidentController::class, 'updateFamilyCard'])->middleware('throttle:10,1')->name('households.identity');
-        Route::get('/households/{household}/residents/create', [ResidentController::class, 'createResident'])->name('residents.people.create');
-        Route::post('/households/{household}/residents', [ResidentController::class, 'storeResident'])->middleware('throttle:10,1')->name('residents.people.store');
-        Route::get('/residents/{resident}/edit', [ResidentController::class, 'editResident'])->name('residents.edit');
-        Route::patch('/residents/{resident}/details', [ResidentController::class, 'updateDetails'])->middleware('throttle:10,1')->name('residents.details');
+        Route::post('/households', [ResidentController::class, 'storeHousehold'])->name('households.store');
+        Route::post('/households/{household}/residents', [ResidentController::class, 'storeResident'])->name('residents.people.store');
         Route::patch('/residents/{resident}', [ResidentController::class, 'updateResident'])->name('residents.update');
 
         Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
@@ -91,5 +85,4 @@ Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivat
     Route::middleware('role:resident')->post('/assets/{asset}/loans', [AssetController::class, 'requestLoan'])
         ->middleware('throttle:5,1')
         ->name('assets.loans.store');
-    Route::middleware('role:resident')->get('/my-household', MyHouseholdController::class)->name('households.mine');
 });

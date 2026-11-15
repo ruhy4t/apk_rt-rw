@@ -1,7 +1,3 @@
-<IfModule mod_authz_core.c>
-    Require all granted
-</IfModule>
-
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
