@@ -3,21 +3,27 @@
 @section('title', 'Keuangan')
 
 @section('content')
-    <h1>Keuangan dan iuran</h1>
+    <div class="page-heading"><div><h1>Keuangan dan iuran</h1>
     <p class="mt-2 text-sm text-slate-600">
         @if ($isResident)
             Riwayat yang ditampilkan hanya iuran rumah tangga Anda.
         @else
             Detail keuangan hanya terlihat oleh petugas dengan cakupan wilayah yang sesuai.
         @endif
-    </p>
+    </p></div>
+        @unless ($isResident)<button class="button button-primary" type="button" data-open-dialog="create-finance"><x-icon name="plus" /><span data-button-label>Catat transaksi / iuran</span></button>@endunless
+    </div>
 
     @unless ($isResident)
-        <details class="mt-6 panel" @if ($errors->any()) open @endif>
-        <summary class="text-link"><x-icon name="plus" />Catat transaksi atau pembayaran iuran</summary>
+        <dialog id="create-finance" aria-labelledby="create-finance-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 sm:p-7" @if ($errors->any() && old('_form') === 'create-finance') data-auto-open @endif>
+            <div class="flex items-start justify-between gap-4">
+                <h2 id="create-finance-title" class="text-xl font-bold"><x-icon name="plus" />Catat transaksi atau pembayaran iuran</h2>
+                <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
+            </div>
         <div class="mt-6 grid gap-6 xl:grid-cols-2">
             <form class="rounded-lg border border-slate-200 bg-white p-5" method="POST" action="{{ route('finance.entries.store') }}">
                 @csrf
+                <input type="hidden" name="_form" value="create-finance">
                 <h2 class="font-bold"><x-icon name="wallet" />Catat transaksi kas</h2>
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <label class="text-sm font-medium">Wilayah
@@ -55,6 +61,7 @@
 
             <form class="rounded-lg border border-slate-200 bg-white p-5" method="POST" action="{{ route('finance.contributions.store') }}">
                 @csrf
+                <input type="hidden" name="_form" value="create-finance">
                 <h2 class="font-bold"><x-icon name="wallet" />Catat pembayaran iuran</h2>
                 <div class="mt-4 space-y-4">
                     <label class="block text-sm font-medium">Rumah tangga
@@ -82,7 +89,7 @@
                 <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan iuran</span></button>
             </form>
         </div>
-        </details>
+        </dialog>
     @endunless
 
     @unless ($isResident)

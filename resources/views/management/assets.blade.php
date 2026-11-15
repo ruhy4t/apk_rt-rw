@@ -3,15 +3,19 @@
 @section('title', 'Inventaris')
 
 @section('content')
-    <h1>Inventaris dan peminjaman</h1>
-    <p class="mt-2 text-sm text-slate-600">Permintaan peminjaman hanya dapat dibuat untuk aset pada wilayah rumah tangga Anda.</p>
+    <div class="page-heading"><div><h1>Inventaris dan peminjaman</h1><p>{{ $isResident ? 'Lihat inventaris dan ajukan peminjaman untuk rumah tangga Anda.' : 'Kelola barang lingkungan dan permintaan peminjaman warga.' }}</p></div>
+        @unless ($isResident)<button class="button button-primary" type="button" data-open-dialog="create-inventory"><x-icon name="plus" /><span data-button-label>Tambah inventaris</span></button>@endunless
+    </div>
 
     @unless ($isResident)
-        <details class="mt-6 panel" @if ($errors->any()) open @endif>
-        <summary class="text-link"><x-icon name="plus" />Tambah inventaris</summary>
-        <form class="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-5 sm:grid-cols-2 xl:grid-cols-3" method="POST" action="{{ route('assets.store') }}">
+        <dialog id="create-inventory" aria-labelledby="create-inventory-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 sm:p-7" @if ($errors->any() && old('_form') === 'create-inventory') data-auto-open @endif>
+            <div class="flex items-start justify-between gap-4">
+                <h2 id="create-inventory-title" class="text-xl font-bold"><x-icon name="plus" />Tambah inventaris</h2>
+                <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
+            </div>
+        <form class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" method="POST" action="{{ route('assets.store') }}">
             @csrf
-            <h2 class="font-bold sm:col-span-2 xl:col-span-3"><x-icon name="inventory" />Tambah inventaris</h2>
+                <input type="hidden" name="_form" value="create-inventory">
             <label class="text-sm font-medium">Wilayah
                 <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="rt_area_id" required>
                     @foreach ($areas as $area)
@@ -37,7 +41,7 @@
             </label>
             <div class="sm:col-span-2 xl:col-span-3"><button class="rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan inventaris</span></button></div>
         </form>
-        </details>
+        </dialog>
     @endunless
 
     <section class="mt-8">

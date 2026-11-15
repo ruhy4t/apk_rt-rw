@@ -7,17 +7,22 @@
         <section>
             <div class="page-heading">
                 <div><h1>Data rumah tangga dan warga</h1><p>Kelola data sesuai cakupan RT/RW yang ditugaskan.</p></div>
-                <button class="button button-primary" type="button" data-open-dialog="create-household"><x-icon name="plus" /><span data-button-label>Tambah rumah tangga</span></button>
+                <button class="button button-primary" type="button" data-open-dialog="create-household"><x-icon name="plus" /><span data-button-label>Tambah rumah tangga & kepala keluarga</span></button>
             </div>
             <noscript><p class="mt-3 text-sm text-rose-700">Aktifkan JavaScript untuk membuka formulir rumah tangga.</p></noscript>
 
             <div class="mt-6 space-y-4">
                 @forelse ($households as $household)
+                    @php
+                        $head = $household->residents->firstWhere('relationship', 'Kepala Keluarga');
+                        $headCandidates = $household->residents->where('relationship', '!=', 'Kepala Keluarga');
+                    @endphp
                     <article class="rounded-lg border border-slate-200 bg-white p-5">
                         <div class="household-summary">
                             <div>
                                 <h2 class="font-semibold">{{ $household->household_code }}</h2>
                                 <p class="text-sm text-slate-500">{{ $household->rtArea->name }} · {{ $household->rtArea->code }}</p>
+                                <p class="mt-2 text-sm"><span class="text-slate-500">Kepala keluarga:</span> <strong>{{ $head?->full_name ?? 'Belum ditetapkan' }}</strong></p>
                                 @if ($household->address)
                                     <p class="mt-1 text-sm text-slate-600">{{ $household->address }}</p>
                                 @endif
@@ -27,14 +32,53 @@
                         <div class="mt-4 divide-y divide-slate-100">
                             @forelse ($household->residents as $resident)
                                 <div class="member-row">
-                                    <div><p class="font-semibold">{{ $resident->full_name }}</p><p class="text-slate-500">{{ $resident->relationship ?: 'Anggota rumah tangga' }}@if ($resident->phone) · {{ $resident->phone }}@endif</p></div>
+                                    <div><p class="font-semibold">{{ $resident->full_name }} @if ($resident->relationship === 'Kepala Keluarga')<span class="badge"><x-icon name="household" />Kepala Keluarga</span>@endif</p><p class="text-slate-500">{{ $resident->relationship ?: 'Anggota rumah tangga' }}@if ($resident->phone) · {{ $resident->phone }}@endif</p></div>
                                     <a class="text-link shrink-0" href="{{ route('residents.edit', $resident) }}"><x-icon name="edit" />Ubah data</a>
                                 </div>
                             @empty
                                 <p class="py-3 text-sm text-slate-500">Belum ada data anggota.</p>
                             @endforelse
                         </div>
-                        <a class="mt-4 inline-block font-semibold text-brand-800 underline" href="{{ route('residents.people.create', $household) }}"><x-icon name="plus" />Tambah anggota keluarga</a>
+                        <div class="mt-4 flex flex-wrap items-center gap-3">
+                            <a class="button" href="{{ route('residents.people.create', $household) }}"><x-icon name="plus" />Tambah anggota keluarga</a>
+                            <button class="button" type="button" data-open-dialog="change-head-{{ $household->id }}"><x-icon name="household" /><span data-button-label>{{ $head ? 'Ganti kepala keluarga' : 'Tetapkan kepala keluarga' }}</span></button>
+                        </div>
+                        <dialog id="change-head-{{ $household->id }}" aria-labelledby="change-head-title-{{ $household->id }}" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 sm:p-7" @if ($errors->any() && old('_form') === 'change-head-'.$household->id) data-auto-open @endif>
+                            <div class="flex items-start justify-between gap-4">
+                                <div><h2 id="change-head-title-{{ $household->id }}" class="text-xl">{{ $head ? 'Ganti kepala keluarga' : 'Tetapkan kepala keluarga' }}</h2><p class="mt-1 text-sm text-slate-500">Rumah tangga {{ $household->household_code }}</p></div>
+                                <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
+                            </div>
+                            @if ($headCandidates->isEmpty())
+                                <p class="mt-4 text-sm text-slate-600">Tambahkan anggota keluarga terlebih dahulu agar dapat dipilih sebagai kepala keluarga baru.</p>
+                            @else
+                                <p class="mt-4 text-sm text-slate-600">Kepala keluarga saat ini: <strong>{{ $head?->full_name ?? 'Belum ditetapkan' }}</strong>. Data seluruh anggota tetap tersimpan setelah pergantian.</p>
+                                <form class="mt-5 space-y-4" method="POST" action="{{ route('households.head', $household) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="_form" value="change-head-{{ $household->id }}">
+                                    <input type="hidden" name="current_head_id" value="{{ $head?->id }}">
+                                    <label class="block text-sm font-medium">Kepala keluarga baru
+                                        <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" name="new_head_id" required>
+                                            <option value="">Pilih anggota keluarga</option>
+                                            @foreach ($headCandidates as $candidate)
+                                                <option value="{{ $candidate->id }}" @selected(old('_form') === 'change-head-'.$household->id && (string) old('new_head_id') === (string) $candidate->id)>{{ $candidate->full_name }} · {{ $candidate->relationship ?: 'Anggota keluarga' }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    @if ($head)
+                                        <label class="block text-sm font-medium">Hubungan {{ $head->full_name }} setelah pergantian
+                                            <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" name="previous_relationship" required>
+                                                <option value="">Pilih hubungan kepala lama</option>
+                                                @foreach (['Kepala Keluarga Sebelumnya', 'Istri', 'Suami', 'Anak', 'Famili Lain'] as $relationship)
+                                                    <option value="{{ $relationship }}" @selected(old('_form') === 'change-head-'.$household->id && old('previous_relationship') === $relationship)>{{ $relationship }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                    @endif
+                                    <div class="form-actions"><button class="button button-primary" type="submit"><x-icon name="save" /><span data-button-label>Simpan kepala keluarga</span></button><button class="button" type="button" data-close-dialog>Batal</button></div>
+                                </form>
+                            @endif
+                        </dialog>
                         <details class="mt-3 text-sm">
                             <summary class="cursor-pointer font-semibold text-brand-800"><x-icon name="edit" />Perbarui nomor KK</summary>
                             <form class="mt-3 flex flex-wrap items-end gap-2" method="POST" action="{{ route('households.identity', $household) }}">
@@ -93,6 +137,10 @@
                     </div>
                     </div></fieldset>
                     <fieldset class="form-section"><legend>02 · Data kepala keluarga</legend>
+                    <p id="head-assignment-help" class="mb-4 clear-both text-sm text-slate-600">Warga yang diisi pada bagian ini otomatis menjadi Kepala Keluarga untuk rumah tangga baru.</p>
+                    <label class="mb-4 block text-sm font-medium">Hubungan keluarga
+                        <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" value="Kepala Keluarga" readonly aria-describedby="head-assignment-help">
+                    </label>
                     @include('management.resident-fields', ['editingResident' => null])
                     </fieldset>
                     <div class="form-actions"><button class="button button-primary" type="submit"><x-icon name="save" /><span data-button-label>Simpan rumah tangga</span></button><button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Batal</span></button></div>

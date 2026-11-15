@@ -44,6 +44,7 @@ Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivat
         Route::get('/residents', [ResidentController::class, 'index'])->name('residents.index');
         Route::post('/households', [ResidentController::class, 'storeHousehold'])->middleware('throttle:10,1')->name('households.store');
         Route::patch('/households/{household}/identity', [ResidentController::class, 'updateFamilyCard'])->middleware('throttle:10,1')->name('households.identity');
+        Route::patch('/households/{household}/head', [ResidentController::class, 'updateHead'])->middleware('throttle:10,1')->name('households.head');
         Route::get('/households/{household}/residents/create', [ResidentController::class, 'createResident'])->name('residents.people.create');
         Route::post('/households/{household}/residents', [ResidentController::class, 'storeResident'])->middleware('throttle:10,1')->name('residents.people.store');
         Route::get('/residents/{resident}/edit', [ResidentController::class, 'editResident'])->name('residents.edit');

@@ -26,3 +26,13 @@ Kembalikan deployment aplikasi ke versi sebelum fitur dan pertahankan kolom tamb
 ## Kontrol data
 
 NIK, nomor KK, dan agama tidak di-flash sebagai input lama pada kegagalan validasi. Nomor identitas tidak diisi ulang pada HTML formulir edit. Endpoint pengelolaan memeriksa cakupan RT/RW di server, penulisan dibatasi lajunya, dan respons area autentikasi memakai `private, no-store`.
+
+## Pergantian kepala keluarga
+
+Di **Data warga**, setiap rumah tangga menampilkan kepala keluarga saat ini dan tombol **Ganti kepala keluarga**, atau **Tetapkan kepala keluarga** bila belum ada. Pilih kepala baru dari anggota rumah tangga yang sama. Jika ada kepala lama, pilih hubungan setelah pergantian; tersedia pilihan **Kepala Keluarga Sebelumnya** agar datanya tetap dapat dikenali tanpa dihapus.
+
+Penggantian dijalankan dalam satu transaksi dengan penguncian rumah tangga. Formulir yang sudah kedaluwarsa ditolak bila kepala keluarga telah berubah. ID anggota dari rumah tangga lain ditolak, dan pengurus tetap dibatasi cakupan RT/RW. Aktivitas dicatat pada audit tanpa menyalin NIK atau nomor KK.
+
+Saat menambah anggota, pilihan **Kepala Keluarga** hanya tersedia jika belum ada kepala keluarga. Server juga memeriksa kondisi ini setelah mengunci rumah tangga, sehingga formulir lama tidak dapat membuat kepala kedua. Formulir edit anggota biasa tidak dapat mempromosikan atau menurunkan kepala keluarga; gunakan tindakan pergantian khusus.
+
+Fitur ini tidak memindahkan anggota, menghapus data, mengubah akun, atau otomatis mencatat status meninggal/perceraian. Hubungan anggota lain perlu ditinjau kembali setelah pergantian. Tidak ada perubahan skema database untuk fitur pergantian ini. Rollback kode tidak membatalkan pergantian yang sudah disimpan; gunakan alur yang sama untuk koreksi data oleh petugas berwenang.

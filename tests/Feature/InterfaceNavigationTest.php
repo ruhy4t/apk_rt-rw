@@ -51,5 +51,31 @@ class InterfaceNavigationTest extends TestCase
             ->assertSee('action="'.route('households.store').'"', false)
             ->assertSee('name="national_id"', false)
             ->assertSee('name="family_card_number"', false);
+
+        foreach (['announcements.index' => 'create-announcement', 'agenda.index' => 'create-agenda', 'assets.index' => 'create-inventory', 'finance.index' => 'create-finance'] as $route => $dialog) {
+            $this->get(route($route))->assertOk()
+                ->assertSee('data-open-dialog="'.$dialog.'"', false)
+                ->assertSee('<dialog id="'.$dialog.'"', false);
+        }
+    }
+
+    public function test_failed_creation_reopens_the_correct_popup(): void
+    {
+        config(['session.driver' => 'database']);
+        $this->actingAs(User::factory()->create(['role' => 'super_admin']));
+        foreach ([
+            ['announcements.index', 'announcements.store', 'create-announcement'],
+            ['agenda.index', 'agenda.store', 'create-agenda'],
+            ['assets.index', 'assets.store', 'create-inventory'],
+            ['finance.index', 'finance.entries.store', 'create-finance'],
+        ] as [$index, $store, $dialog]) {
+            $post = $this->flushSession()->from(route($index))->post(route($store), ['_form' => $dialog])
+                ->assertRedirect(route($index))->assertSessionHasErrors()->assertSessionHas('_old_input._form', $dialog);
+            $cookie = $post->getCookie(config('session.cookie'), false);
+            $this->assertNotNull($cookie);
+            $response = $this->withUnencryptedCookie($cookie->getName(), $cookie->getValue())
+                ->get(route($index))->assertOk();
+            $this->assertMatchesRegularExpression('/<dialog\b[^>]*id="'.$dialog.'"[^>]*data-auto-open/s', $response->getContent());
+        }
     }
 }

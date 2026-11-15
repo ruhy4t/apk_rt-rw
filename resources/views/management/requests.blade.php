@@ -3,12 +3,17 @@
 @section('title', 'Layanan warga')
 
 @section('content')
-    <div class="page-heading"><div><h1>Layanan warga</h1><p>{{ $isResident ? 'Ajukan keperluan Anda dan lihat tanggapan pengurus. Permintaan dan lampiran bersifat privat.' : 'Tinjau permintaan warga sesuai wilayah dan berikan pembaruan status.' }}</p></div></div>
+    <div class="page-heading"><div><h1>Layanan warga</h1><p>{{ $isResident ? 'Ajukan keperluan Anda dan lihat tanggapan pengurus. Permintaan dan lampiran bersifat privat.' : 'Tinjau permintaan warga sesuai wilayah dan berikan pembaruan status.' }}</p></div>@if ($isResident)<button class="button button-primary" type="button" data-open-dialog="create-request"><x-icon name="plus" /><span data-button-label>Tambah permintaan</span></button>@endif</div>
 
     @if ($isResident)
-        <form class="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-5" method="POST" action="{{ route('requests.store') }}">
+        <dialog id="create-request" aria-labelledby="create-request-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 sm:p-7" @if ($errors->any() && old('_form') === 'create-request') data-auto-open @endif>
+            <div class="flex items-start justify-between gap-4">
+                <h2 id="create-request-title" class="text-xl font-bold"><x-icon name="plus" />Tambah permintaan</h2>
+                <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
+            </div>
+        <form class="mt-6 grid gap-4" method="POST" action="{{ route('requests.store') }}">
             @csrf
-            <h2 class="font-bold"><x-icon name="document" />Buat permintaan</h2>
+                <input type="hidden" name="_form" value="create-request">
             <label class="text-sm font-medium">Jenis layanan
                 <select class="mt-1 w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 font-normal" name="category">
                     <option value="letter">Surat keterangan</option>
@@ -24,6 +29,7 @@
             </label>
             <button class="w-fit rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="send" /><span data-button-label>Kirim permintaan</span></button>
         </form>
+        </dialog>
     @endif
 
     <section class="mt-8 space-y-4">

@@ -69,10 +69,14 @@ class ResidentController extends Controller
         abort_unless($access->canManageRt($request->user(), $household->rt_area_id), 403);
 
         $data = $this->validateResident($request, $digest);
-        $data += $request->validate(['relationship' => ['required', 'in:Istri,Suami,Anak,Famili Lain']]);
+        $data += $request->validate(['relationship' => ['required', 'in:Kepala Keluarga,Istri,Suami,Anak,Famili Lain']]);
 
         try {
             DB::transaction(function () use ($request, $household, $data) {
+                Household::query()->whereKey($household->id)->lockForUpdate()->firstOrFail();
+                if ($data['relationship'] === 'Kepala Keluarga' && $household->residents()->where('relationship', 'Kepala Keluarga')->exists()) {
+                    throw ValidationException::withMessages(['relationship' => 'Kepala keluarga sudah ditetapkan. Gunakan Ganti kepala keluarga untuk menggantinya.']);
+                }
                 $resident = $household->residents()->create($data);
                 AuditEvent::record($request->user(), 'resident.created', $resident);
             });
@@ -90,7 +94,47 @@ class ResidentController extends Controller
     {
         abort_unless($access->canManageRt($request->user(), $household->rt_area_id), 403);
 
-        return view('management.resident-create', compact('household'));
+        $hasHead = $household->residents()->where('relationship', 'Kepala Keluarga')->exists();
+
+        return view('management.resident-create', compact('household', 'hasHead'));
+    }
+
+    public function updateHead(Request $request, Household $household, AreaAccess $access): RedirectResponse
+    {
+        abort_unless($access->canManageRt($request->user(), $household->rt_area_id), 403);
+        $data = $request->validate([
+            'new_head_id' => ['required', 'integer', 'min:1'],
+            'current_head_id' => ['present', 'nullable', 'integer', 'min:1'],
+            'previous_relationship' => ['nullable', 'in:Kepala Keluarga Sebelumnya,Istri,Suami,Anak,Famili Lain'],
+        ]);
+
+        DB::transaction(function () use ($request, $household, $data) {
+            Household::query()->whereKey($household->id)->lockForUpdate()->firstOrFail();
+            $heads = $household->residents()->where('relationship', 'Kepala Keluarga')->lockForUpdate()->get();
+            if ($heads->count() > 1) {
+                throw ValidationException::withMessages(['head' => 'Terdapat lebih dari satu kepala keluarga. Periksa data rumah tangga ini sebelum melanjutkan.']);
+            }
+            $current = $heads->first();
+            if ((int) $current?->id !== (int) ($data['current_head_id'] ?? 0)) {
+                throw ValidationException::withMessages(['head' => 'Kepala keluarga sudah berubah. Muat ulang halaman sebelum melanjutkan.']);
+            }
+            $next = $household->residents()->whereKey($data['new_head_id'])->lockForUpdate()->first();
+            if (! $next || $next->is($current)) {
+                throw ValidationException::withMessages(['new_head_id' => 'Pilih anggota lain dari rumah tangga yang sama.']);
+            }
+            if ($current) {
+                if (empty($data['previous_relationship'])) {
+                    throw ValidationException::withMessages(['previous_relationship' => 'Tentukan hubungan kepala keluarga sebelumnya.']);
+                }
+                $current->update(['relationship' => $data['previous_relationship']]);
+                AuditEvent::record($request->user(), 'resident.head_replaced', $current);
+            }
+            $next->update(['relationship' => 'Kepala Keluarga']);
+            AuditEvent::record($request->user(), 'resident.head_assigned', $next);
+            AuditEvent::record($request->user(), 'household.head_updated', $household);
+        });
+
+        return redirect()->route('residents.index')->with('status', 'Kepala keluarga berhasil diperbarui. Periksa kembali hubungan anggota keluarga lainnya.');
     }
 
     public function editResident(Request $request, Resident $resident, AreaAccess $access): View
@@ -105,7 +149,7 @@ class ResidentController extends Controller
         abort_unless($access->canManageRt($request->user(), $resident->household->rt_area_id), 403);
         $data = $this->validateResident($request, $digest, $resident);
         if ($resident->relationship !== 'Kepala Keluarga') {
-            $data += $request->validate(['relationship' => ['required', 'in:Istri,Suami,Anak,Famili Lain']]);
+            $data += $request->validate(['relationship' => ['required', 'in:Istri,Suami,Anak,Famili Lain,Kepala Keluarga Sebelumnya']]);
         }
 
         try {

@@ -3,10 +3,9 @@
 @section('title', 'Pengumuman')
 
 @section('content')
-    <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
+    <div>
         <section>
-            <h1>Pengumuman</h1>
-            <p class="mt-2 text-sm text-slate-600">Pastikan pengumuman tidak memuat data pribadi yang tidak seharusnya dipublikasikan.</p>
+            <div class="page-heading"><div><h1>Pengumuman</h1><p>Kelola pengumuman publik dan khusus warga sesuai wilayah.</p></div><button class="button button-primary" type="button" data-open-dialog="create-announcement"><x-icon name="plus" /><span data-button-label>Tambah pengumuman</span></button></div>
             <div class="mt-6 space-y-4">
                 @forelse ($announcements as $announcement)
                     <article class="rounded-lg border border-slate-200 bg-white p-5">
@@ -52,10 +51,15 @@
             <div class="mt-5">{{ $announcements->links() }}</div>
         </section>
 
-        <aside class="h-fit rounded-lg border border-slate-200 bg-white p-5">
-            <h2 class="font-bold"><x-icon name="announcement" />Buat pengumuman</h2>
+        <dialog id="create-announcement" aria-labelledby="create-announcement-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 sm:p-7" @if ($errors->any() && old('_form') === 'create-announcement') data-auto-open @endif>
+            <div class="flex items-start justify-between gap-4">
+                <h2 id="create-announcement-title" class="text-xl font-bold"><x-icon name="plus" />Tambah pengumuman</h2>
+                <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
+            </div>
+            <p class="mt-4 text-sm text-slate-600">Pengumuman publik bisa dibaca tanpa login. Jangan cantumkan NIK, nomor KK, atau data pribadi warga di dalamnya.</p>
             <form class="mt-4 space-y-4" method="POST" action="{{ route('announcements.store') }}">
                 @csrf
+                <input type="hidden" name="_form" value="create-announcement">
                 @if (auth()->user()->hasRole('super_admin'))
                     <div>
                         <label class="mb-1 block text-sm font-medium" for="rt_area_id">Cakupan</label>
@@ -101,6 +105,6 @@
                 </label>
                 <button class="w-full rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan pengumuman</span></button>
             </form>
-        </aside>
+        </dialog>
     </div>
 @endsection

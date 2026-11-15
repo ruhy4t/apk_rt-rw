@@ -8,11 +8,14 @@
     <form class="mt-6 max-w-2xl space-y-4 rounded-lg border border-slate-200 bg-white p-5" method="POST" action="{{ route('residents.details', $resident) }}">
         @csrf
         @method('PATCH')
+        @if ($resident->relationship === 'Kepala Keluarga')
+            <p class="badge"><x-icon name="household" />Kepala Keluarga</p>
+        @endif
         @if ($resident->relationship !== 'Kepala Keluarga')
             <label class="block text-sm font-medium">Hubungan keluarga
                 <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" name="relationship" required>
                     <option value="">Pilih hubungan</option>
-                    @foreach (['Istri', 'Suami', 'Anak', 'Famili Lain'] as $relationship)
+                    @foreach (['Istri', 'Suami', 'Anak', 'Famili Lain', 'Kepala Keluarga Sebelumnya'] as $relationship)
                         <option value="{{ $relationship }}" @selected(old('relationship', $resident->relationship) === $relationship)>{{ $relationship }}</option>
                     @endforeach
                 </select>

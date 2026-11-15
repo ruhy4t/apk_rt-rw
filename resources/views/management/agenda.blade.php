@@ -3,9 +3,9 @@
 @section('title', 'Agenda')
 
 @section('content')
-    <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
+    <div>
         <section>
-            <h1>Agenda lingkungan</h1>
+            <div class="page-heading"><div><h1>Agenda lingkungan</h1><p>Jadwalkan kegiatan dan atur informasi agenda lingkungan.</p></div><button class="button button-primary" type="button" data-open-dialog="create-agenda"><x-icon name="plus" /><span data-button-label>Tambah agenda</span></button></div>
             <div class="mt-6 space-y-4">
                 @forelse ($events as $event)
                     <article class="rounded-lg border border-slate-200 bg-white p-5">
@@ -51,10 +51,14 @@
             <div class="mt-5">{{ $events->links() }}</div>
         </section>
 
-        <aside class="h-fit rounded-lg border border-slate-200 bg-white p-5">
-            <h2 class="font-bold"><x-icon name="calendar" />Tambah agenda</h2>
+        <dialog id="create-agenda" aria-labelledby="create-agenda-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 sm:p-7" @if ($errors->any() && old('_form') === 'create-agenda') data-auto-open @endif>
+            <div class="flex items-start justify-between gap-4">
+                <h2 id="create-agenda-title" class="text-xl font-bold"><x-icon name="plus" />Tambah agenda</h2>
+                <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
+            </div>
             <form class="mt-4 space-y-4" method="POST" action="{{ route('agenda.store') }}">
                 @csrf
+                <input type="hidden" name="_form" value="create-agenda">
                 @if (auth()->user()->hasRole('super_admin'))
                     <label class="block text-sm font-medium" for="rt_area_id">Cakupan
                         <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" id="rt_area_id" name="rt_area_id">
@@ -98,6 +102,6 @@
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" value="1"> Terbitkan</label>
                 <button class="w-full rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan agenda</span></button>
             </form>
-        </aside>
+        </dialog>
     </div>
 @endsection
