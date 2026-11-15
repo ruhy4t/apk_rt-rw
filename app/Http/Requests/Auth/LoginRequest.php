@@ -16,6 +16,15 @@ class LoginRequest extends FormRequest
         return [
             'username' => ['required', 'string', 'alpha_dash:ascii', 'max:80'],
             'password' => ['required', 'string', 'max:255'],
+            'captcha' => ['required', 'string', 'regex:/^[0-9]{1,2}$/'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'captcha.required' => 'Isi jawaban penjumlahan untuk melanjutkan.',
+            'captcha.regex' => 'Jawaban penjumlahan harus berupa angka.',
         ];
     }
 }

@@ -33,14 +33,16 @@ class AdministrationController extends Controller
                     $query->whereKey($actor->rt_area_id ?? 0);
                 }
             }])->orderBy('name')->get(),
-            'users' => $access->manageableUsers($actor)->with(['rwArea:id,name', 'rtArea:id,name'])->orderBy('name')->orderBy('id')->paginate(20),
+            'users' => $access->manageableUsers($actor)->with(['rwArea:id,name', 'rtArea:id,name'])
+                ->when(! config('personal_data.encryption_enabled'), fn ($query) => $query->orderBy('name'))
+                ->orderBy('id')->paginate(20),
             'unlinkedResidents' => Resident::query()
                 ->whereNull('user_id')
                 ->whereHas('household', fn ($query) => $query->whereIn('rt_area_id', $access->manageableRtAreas($actor)->select('id')))
                 ->with('household:id,household_code,rt_area_id')
-                ->orderBy('full_name')
+                ->when(! config('personal_data.encryption_enabled'), fn ($query) => $query->orderBy('full_name'))
                 ->orderBy('id')
-                ->simplePaginate(50, ['id', 'household_id', 'full_name'], 'resident_page'),
+                ->simplePaginate(50, Resident::personalColumns(['id', 'household_id', 'full_name']), 'resident_page'),
         ]);
     }
 
@@ -51,8 +53,19 @@ class AdministrationController extends Controller
             'name' => ['required', 'string', 'max:120'],
         ]);
 
-        $area = RwArea::query()->create($data);
-        AuditEvent::record($request->user(), 'rw_area.created', $area);
+        DB::transaction(function () use ($request, $data) {
+            // A stable, existing row serializes the initial empty-RW case too.
+            User::query()->where('role', 'super_admin')->orderBy('id')->lockForUpdate()->firstOrFail(['id']);
+            $existing = RwArea::query()->orderBy('id')->lockForUpdate()->first(['id']);
+            if ($existing) {
+                throw ValidationException::withMessages([
+                    'rw' => 'Aplikasi dibatasi satu RW. RW tambahan tidak dapat dibuat.',
+                ]);
+            }
+
+            $area = RwArea::query()->create($data);
+            AuditEvent::record($request->user(), 'rw_area.created', $area);
+        }, 3);
 
         return back()->with('status', 'Wilayah RW berhasil dibuat.');
     }
@@ -64,6 +77,12 @@ class AdministrationController extends Controller
             'code' => ['required', 'string', 'max:32'],
             'name' => ['required', 'string', 'max:120'],
         ]);
+
+        if (RwArea::query()->count() !== 1) {
+            throw ValidationException::withMessages([
+                'rw_area_id' => 'Penambahan RT memerlukan tepat satu RW. Periksa pengaturan wilayah terlebih dahulu.',
+            ]);
+        }
 
         $exists = RtArea::query()
             ->where('rw_area_id', $data['rw_area_id'])
@@ -96,6 +115,10 @@ class AdministrationController extends Controller
             'resident_id' => ['nullable', 'integer', 'exists:residents,id'],
             'password' => ['required', 'string', 'min:12', 'max:255', 'confirmed'],
         ]);
+
+        if (User::query()->withUsername($data['username'])->exists()) {
+            throw ValidationException::withMessages(['username' => 'Nama pengguna tersebut sudah digunakan.']);
+        }
 
         $rwAreaId = $data['rw_area_id'] ?? null;
         $rtAreaId = $data['rt_area_id'] ?? null;

@@ -8,6 +8,7 @@
         ['Inventaris', 'assets.index', ['assets.*'], true, 'inventory'],
         ['Pengumuman', 'announcements.index', ['announcements.*'], auth()->user()->hasRole('super_admin', 'rw_operator', 'rt_operator'), 'announcement'],
         ['Agenda', 'agenda.index', ['agenda.*'], auth()->user()->hasRole('super_admin', 'rw_operator', 'rt_operator'), 'calendar'],
+        ['Galeri', 'gallery.index', ['gallery.*'], true, 'image'],
     ];
 @endphp
 <div class="nav-group">

@@ -7,6 +7,7 @@ use App\Models\Household;
 use App\Models\Resident;
 use App\Services\AreaAccess;
 use App\Services\IdentityDigest;
+use App\Services\ResidentInputRules;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class ResidentController extends Controller
         $areas = $access->manageableRtAreas($request->user())->orderBy('name')->get();
         $households = Household::query()
             ->whereIn('rt_area_id', $areas->modelKeys())
-            ->with(['rtArea:id,name,code', 'residents:id,household_id,full_name,relationship,phone'])
+            ->with(['rtArea:id,name,code', 'residents' => fn ($query) => $query->select(Resident::personalColumns(['id', 'household_id', 'full_name', 'relationship', 'phone']))])
             ->orderBy('household_code')
             ->paginate(25);
 
@@ -74,7 +75,7 @@ class ResidentController extends Controller
         try {
             DB::transaction(function () use ($request, $household, $data) {
                 Household::query()->whereKey($household->id)->lockForUpdate()->firstOrFail();
-                if ($data['relationship'] === 'Kepala Keluarga' && $household->residents()->where('relationship', 'Kepala Keluarga')->exists()) {
+                if ($data['relationship'] === 'Kepala Keluarga' && $household->residents()->heads()->exists()) {
                     throw ValidationException::withMessages(['relationship' => 'Kepala keluarga sudah ditetapkan. Gunakan Ganti kepala keluarga untuk menggantinya.']);
                 }
                 $resident = $household->residents()->create($data);
@@ -94,7 +95,7 @@ class ResidentController extends Controller
     {
         abort_unless($access->canManageRt($request->user(), $household->rt_area_id), 403);
 
-        $hasHead = $household->residents()->where('relationship', 'Kepala Keluarga')->exists();
+        $hasHead = $household->residents()->heads()->exists();
 
         return view('management.resident-create', compact('household', 'hasHead'));
     }
@@ -110,7 +111,7 @@ class ResidentController extends Controller
 
         DB::transaction(function () use ($request, $household, $data) {
             Household::query()->whereKey($household->id)->lockForUpdate()->firstOrFail();
-            $heads = $household->residents()->where('relationship', 'Kepala Keluarga')->lockForUpdate()->get();
+            $heads = $household->residents()->heads()->lockForUpdate()->get();
             if ($heads->count() > 1) {
                 throw ValidationException::withMessages(['head' => 'Terdapat lebih dari satu kepala keluarga. Periksa data rumah tangga ini sebelum melanjutkan.']);
             }
@@ -202,7 +203,10 @@ class ResidentController extends Controller
             'full_name' => ['required', 'string', 'max:160'],
             'relationship' => ['nullable', 'string', 'max:50'],
             'phone' => ['nullable', 'string', 'max:32'],
+            'clear_phone' => ['nullable', 'boolean'],
         ]);
+
+        $data = $this->preparePhoneUpdate($data, $resident);
 
         DB::transaction(function () use ($request, $resident, $data) {
             Household::query()->lockForUpdate()->findOrFail($resident->household_id);
@@ -225,19 +229,7 @@ class ResidentController extends Controller
 
     private function validateResident(Request $request, IdentityDigest $digest, ?Resident $resident = null): array
     {
-        $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:160'],
-            'national_id' => [$resident?->national_id ? 'nullable' : 'required', 'string', 'regex:/^[0-9]{16}$/D'],
-            'birthplace' => ['required', 'string', 'max:160'],
-            'birth_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
-            'gender' => ['required', 'in:Laki-laki,Perempuan'],
-            'religion' => ['required', 'string', 'max:80'],
-            'marital_status' => ['required', 'in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati'],
-            'education' => ['required', 'string', 'max:80'],
-            'occupation' => ['required', 'string', 'max:160'],
-            'residency_status' => ['required', 'in:Tetap,Kontrak/Kos'],
-            'phone' => ['nullable', 'string', 'max:32'],
-        ]);
+        $data = $request->validate(ResidentInputRules::rules($resident));
         if (! empty($data['national_id'])) {
             $data['national_id_digest'] = $digest->make('nik', $data['national_id']);
             $existing = Resident::query()->where('national_id_digest', $data['national_id_digest']);
@@ -249,6 +241,22 @@ class ResidentController extends Controller
             }
         } else {
             unset($data['national_id']);
+        }
+
+        return $this->preparePhoneUpdate($data, $resident);
+    }
+
+    private function preparePhoneUpdate(array $data, ?Resident $resident): array
+    {
+        $clear = ! empty($data['clear_phone']);
+        unset($data['clear_phone']);
+        if ($clear && ! empty($data['phone'])) {
+            throw ValidationException::withMessages(['phone' => 'Isi nomor baru atau pilih hapus nomor, bukan keduanya.']);
+        }
+        if ($resident && $clear) {
+            $data['phone'] = null;
+        } elseif ($resident && empty($data['phone'])) {
+            unset($data['phone']);
         }
 
         return $data;

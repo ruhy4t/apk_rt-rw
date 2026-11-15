@@ -4,14 +4,23 @@
 
 @section('content')
     <h1>{{ request()->routeIs('users.index') ? 'Pengguna' : 'Pengaturan wilayah' }}</h1>
-    <p class="mt-2 text-sm text-slate-600">{{ request()->routeIs('users.index') ? 'Kelola akun sesuai wilayah yang ditugaskan. Kata sandi awal dan hasil reset wajib diganti saat masuk.' : 'Kelola daftar wilayah RW dan RT. Akun pengguna dikelola di menu Pengguna.' }}</p>
+    <p class="mt-2 text-sm text-slate-600">{{ request()->routeIs('users.index') ? 'Kelola akun sesuai wilayah yang ditugaskan. Kata sandi awal dan hasil reset wajib diganti saat masuk.' : 'Aplikasi ini melayani satu RW dengan beberapa RT. Tetapkan RW sekali, lalu kelola daftar RT di bawahnya.' }}</p>
 
     @if (request()->routeIs('admin.setup') && auth()->user()->hasRole('super_admin'))
+    @if ($rwAreas->count() > 1)
+        <div class="notice notice-error mt-6" role="alert">Data lama masih berisi lebih dari satu RW. Penambahan wilayah dinonaktifkan sampai RW yang digunakan ditentukan. Data lama tetap dipertahankan.</div>
+    @elseif ($rwAreas->count() === 1)
+        <p class="mt-6 text-sm text-slate-600">RW terdaftar: <strong class="text-slate-900">{{ $rwAreas->first()->name }} · {{ $rwAreas->first()->code }}</strong>. Penambahan RW lain tidak tersedia.</p>
+    @endif
     <div class="mt-6 flex flex-wrap gap-3">
+        @if ($rwAreas->isEmpty())
         <button class="rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white hover:bg-brand-800" type="button" data-open-dialog="create-rw"><x-icon name="plus" /><span data-button-label>Tambah wilayah RW</span></button>
+        @elseif ($rwAreas->count() === 1)
         <button class="rounded-lg border border-brand-700 px-4 py-2.5 font-semibold text-brand-800 hover:bg-brand-50" type="button" data-open-dialog="create-rt"><x-icon name="plus" /><span data-button-label>Tambah wilayah RT</span></button>
+        @endif
     </div>
     <noscript><p class="mt-3 text-sm text-rose-700">Aktifkan JavaScript untuk membuka formulir wilayah.</p></noscript>
+    @if ($rwAreas->isEmpty())
     <dialog id="create-rw" aria-labelledby="create-rw-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'create-rw') data-auto-open @endif>
         <div class="flex items-center justify-between gap-4">
             <h2 id="create-rw-title" class="text-xl font-bold">Tambah wilayah RW</h2>
@@ -34,6 +43,8 @@
             <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan RW</span></button>
         </form>
     </dialog>
+    @endif
+    @if ($rwAreas->count() === 1)
     <dialog id="create-rt" aria-labelledby="create-rt-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'create-rt') data-auto-open @endif>
         <div class="flex items-center justify-between gap-4">
             <h2 id="create-rt-title" class="text-xl font-bold">Tambah wilayah RT</h2>
@@ -47,11 +58,8 @@
             <input type="hidden" name="_form" value="create-rt">
             <div class="mt-4 grid gap-3 sm:grid-cols-3">
                 <label class="text-sm font-medium sm:col-span-3">Wilayah RW
-                    <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="rw_area_id" required>
-                        @foreach ($rwAreas as $rw)
-                            <option value="{{ $rw->id }}">{{ $rw->name }} · {{ $rw->code }}</option>
-                        @endforeach
-                    </select>
+                    <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" value="{{ $rwAreas->first()->name }} · {{ $rwAreas->first()->code }}" readonly>
+                    <input type="hidden" name="rw_area_id" value="{{ $rwAreas->first()->id }}">
                 </label>
                 <label class="text-sm font-medium">Kode RT
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="code" maxlength="32" required>
@@ -63,6 +71,7 @@
             <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan RT</span></button>
         </form>
     </dialog>
+    @endif
     @endif
 
     @if (request()->routeIs('users.index'))

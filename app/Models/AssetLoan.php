@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedPersonalData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AssetLoan extends Model
 {
+    use HasEncryptedPersonalData;
+
+    protected const PERSONAL_FIELDS = [
+        'purpose' => null,
+    ];
+
     protected $fillable = [
         'asset_id',
         'household_id',
@@ -23,6 +30,7 @@ class AssetLoan extends Model
     protected function casts(): array
     {
         return [
+            'private_data' => 'encrypted:array',
             'quantity' => 'integer',
             'starts_at' => 'datetime',
             'due_at' => 'datetime',

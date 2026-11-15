@@ -13,6 +13,7 @@ class PublicHomeController extends Controller
     public function __invoke(): View
     {
         $announcements = Announcement::query()
+            ->with('photo')
             ->where('audience', 'public')
             ->where('is_published', true)
             ->where(function ($query) {
@@ -23,6 +24,7 @@ class PublicHomeController extends Controller
             ->get(['id', 'title', 'body', 'published_at']);
 
         $events = CommunityEvent::query()
+            ->with('photo')
             ->where('audience', 'public')
             ->where('is_published', true)
             ->where('starts_at', '>=', now())

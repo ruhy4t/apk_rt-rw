@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedPersonalData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Contribution extends Model
 {
+    use HasEncryptedPersonalData;
+
+    protected const PERSONAL_FIELDS = [
+        'note' => null,
+    ];
+
     protected $fillable = [
         'household_id',
         'recorded_by',
@@ -19,6 +26,7 @@ class Contribution extends Model
     protected function casts(): array
     {
         return [
+            'private_data' => 'encrypted:array',
             'amount' => 'integer',
             'paid_at' => 'datetime',
         ];

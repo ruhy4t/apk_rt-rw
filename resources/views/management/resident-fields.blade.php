@@ -3,6 +3,7 @@
     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="full_name" maxlength="160" value="{{ old('full_name', $editingResident?->full_name) }}" required>
 </label>
 <label class="block text-sm font-medium">NIK (16 digit){{ $editingResident?->national_id ? ' - kosongkan jika tidak diubah' : '' }}
+    @if ($editingResident?->national_id)<span class="mt-1 block font-normal text-slate-500">Saat ini: {{ \App\Support\PersonalDataMask::number($editingResident->national_id) }}</span>@endif
     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="national_id" inputmode="numeric" pattern="[0-9]{16}" minlength="16" maxlength="16" autocomplete="off" @required(! $editingResident?->national_id)>
 </label>
 <label class="block text-sm font-medium">Tempat lahir
@@ -59,7 +60,9 @@
         @endforeach
     </select>
 </label>
-<label class="block text-sm font-medium">Nomor telepon (opsional)
-    <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="phone" type="tel" maxlength="32" value="{{ old('phone', $editingResident?->phone) }}">
+<label class="block text-sm font-medium">Nomor telepon (opsional){{ $editingResident?->phone ? ' - kosongkan jika tidak diubah' : '' }}
+    @if ($editingResident?->phone)<span class="mt-1 block font-normal text-slate-500">Saat ini: {{ \App\Support\PersonalDataMask::number($editingResident->phone) }}</span>@endif
+    <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="phone" type="tel" maxlength="32" autocomplete="off">
 </label>
+@if ($editingResident?->phone)<label class="col-span-full flex items-center gap-2 text-sm font-normal"><input type="checkbox" name="clear_phone" value="1">Hapus nomor telepon yang tersimpan</label>@endif
 </div>

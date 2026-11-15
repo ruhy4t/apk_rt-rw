@@ -30,6 +30,7 @@
                     <article>
                         <time @if ($announcement->published_at) datetime="{{ $announcement->published_at->toDateString() }}" @endif>{{ $announcement->published_at?->translatedFormat('d F Y') ?? 'Pengumuman' }}</time>
                         <h3>{{ $announcement->title }}</h3>
+                        <x-content-photo :content="$announcement" />
                         <p>{{ $announcement->body }}</p>
                     </article>
                 @empty
@@ -46,6 +47,7 @@
                         <div>
                             <time datetime="{{ $event->starts_at->toIso8601String() }}">{{ $event->starts_at->translatedFormat('l, d F Y · H:i') }}</time>
                             <h3>{{ $event->title }}</h3>
+                            <x-content-photo :content="$event" />
                             @if ($event->description)<p>{{ $event->description }}</p>@endif
                         </div>
                     </article>

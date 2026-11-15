@@ -100,10 +100,10 @@ class PortalAccessTest extends TestCase
             'role' => 'super_admin',
         ]);
 
-        $this->post('/login', [
+        $this->post('/login', $this->loginPayload([
             'username' => 'warga01',
             'password' => 'password',
-        ])->assertRedirect(route('dashboard'));
+        ]))->assertRedirect(route('dashboard'));
 
         $this->actingAs($user)->get('/dashboard')->assertOk();
     }
@@ -116,10 +116,10 @@ class PortalAccessTest extends TestCase
             'is_active' => false,
         ]);
 
-        $this->post('/login', [
+        $this->post('/login', $this->loginPayload([
             'username' => 'nonaktif',
             'password' => 'password',
-        ])->assertSessionHasErrors('username');
+        ]))->assertSessionHasErrors('username');
     }
 
     public function test_resident_dashboard_only_discloses_their_household_code(): void

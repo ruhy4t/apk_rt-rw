@@ -5,12 +5,15 @@ use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\ContentPhotoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\MyHouseholdController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\ResidentController;
+use App\Http\Controllers\ResidentImportController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\StoredFileController;
 use App\Http\Middleware\EnsurePasswordChanged;
@@ -18,11 +21,13 @@ use App\Http\Middleware\PreventPrivateCaching;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', PublicHomeController::class)->name('home');
+Route::get('/gallery', [GalleryController::class, 'index'])->middleware(PreventPrivateCaching::class)->name('gallery.index');
+Route::get('/content-photos/{storedFile}', [ContentPhotoController::class, 'show'])->name('content-photos.show');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:login')
         ->name('login.store');
 });
 
@@ -42,6 +47,10 @@ Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivat
         Route::patch('/users/{user}/password', [AdministrationController::class, 'resetPassword'])
             ->middleware('throttle:5,1')->name('users.password');
         Route::get('/residents', [ResidentController::class, 'index'])->name('residents.index');
+        Route::get('/residents/import', [ResidentImportController::class, 'index'])->name('residents.import.index');
+        Route::get('/residents/import/template', [ResidentImportController::class, 'template'])->middleware('throttle:10,1')->name('residents.import.template');
+        Route::post('/residents/import/preview', [ResidentImportController::class, 'preview'])->middleware('throttle:3,1')->name('residents.import.preview');
+        Route::post('/residents/import/confirm', [ResidentImportController::class, 'store'])->middleware('throttle:2,1')->name('residents.import.store');
         Route::post('/households', [ResidentController::class, 'storeHousehold'])->middleware('throttle:10,1')->name('households.store');
         Route::patch('/households/{household}/identity', [ResidentController::class, 'updateFamilyCard'])->middleware('throttle:10,1')->name('households.identity');
         Route::patch('/households/{household}/head', [ResidentController::class, 'updateHead'])->middleware('throttle:10,1')->name('households.head');
@@ -58,6 +67,9 @@ Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivat
         Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda.index');
         Route::post('/agenda', [AgendaController::class, 'store'])->name('agenda.store');
         Route::patch('/agenda/{event}', [AgendaController::class, 'update'])->name('agenda.update');
+
+        Route::post('/gallery', [GalleryController::class, 'store'])->middleware('throttle:10,1')->name('gallery.store');
+        Route::patch('/gallery/{galleryItem}', [GalleryController::class, 'update'])->middleware('throttle:10,1')->name('gallery.update');
 
         Route::post('/finance/entries', [FinanceController::class, 'storeEntry'])->name('finance.entries.store');
         Route::post('/finance/contributions', [FinanceController::class, 'storeContribution'])->name('finance.contributions.store');

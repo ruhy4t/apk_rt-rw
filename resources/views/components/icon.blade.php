@@ -82,5 +82,11 @@
         @case('power')
             <path d="M12 3v9M6 5a9 9 0 1 0 12 0"/>
             @break
+        @case('image')
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="2"/><path d="m21 15-5-5L5 21"/>
+            @break
+        @case('video')
+            <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3V9Z"/>
+            @break
     @endswitch
 </svg>

@@ -2,12 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedPersonalData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ServiceRequest extends Model
 {
+    use HasEncryptedPersonalData;
+
+    protected const PERSONAL_FIELDS = [
+        'subject' => '[protected]',
+        'description' => '[protected]',
+        'response' => null,
+    ];
+
     protected $fillable = [
         'household_id',
         'requester_id',
@@ -18,6 +27,11 @@ class ServiceRequest extends Model
         'response',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return ['private_data' => 'encrypted:array'];
+    }
 
     public function household(): BelongsTo
     {

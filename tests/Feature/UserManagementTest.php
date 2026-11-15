@@ -31,7 +31,7 @@ class UserManagementTest extends TestCase
             ->assertDontSee('Akun aplikasi')->assertDontSee('Tambah pengguna');
     }
 
-    public function test_failed_user_creation_reopens_dialog_without_flashing_password(): void
+    public function test_failed_user_creation_reopens_dialog_without_flashing_private_name_or_password(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin']);
         $this->actingAs($admin)->from(route('users.index'))->post(route('users.store'), [
@@ -42,9 +42,9 @@ class UserManagementTest extends TestCase
             'password' => 'secret-for-test',
             'password_confirmation' => 'secret-for-test',
         ])->assertRedirect(route('users.index'))->assertSessionHasErrors()
-            ->assertSessionMissing('_old_input.password');
+            ->assertSessionMissing('_old_input.password')->assertSessionMissing('_old_input.name');
         $this->get(route('users.index'))->assertOk()->assertSee('data-auto-open')
-            ->assertSee('Nama Uji')->assertDontSee('secret-for-test');
+            ->assertDontSee('Nama Uji')->assertDontSee('secret-for-test');
     }
 
     public function test_rw_manager_can_only_see_and_manage_subordinates_in_own_rw(): void
@@ -131,7 +131,7 @@ class UserManagementTest extends TestCase
     {
         config(['session.driver' => 'database']);
         $user = User::factory()->create(['username' => 'admin_test', 'role' => 'super_admin', 'password' => 'temporary-pass-123', 'must_change_password' => true]);
-        $this->post(route('login.store'), ['username' => $user->username, 'password' => 'temporary-pass-123'])->assertRedirect();
+        $this->post(route('login.store'), $this->loginPayload(['username' => $user->username, 'password' => 'temporary-pass-123']))->assertRedirect();
         $this->get(route('dashboard'))->assertRedirect(route('profile.edit'));
         $this->patch(route('profile.update'), ['name' => 'Dilarang'])->assertRedirect(route('profile.edit'));
         $this->patch(route('profile.password'), [

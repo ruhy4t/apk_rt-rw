@@ -28,6 +28,7 @@
                 <nav class="public-links" aria-label="Informasi publik">
                     <a href="{{ route('home') }}#pengumuman">Pengumuman</a>
                     <a href="{{ route('home') }}#agenda">Agenda</a>
+                    <a href="{{ route('gallery.index') }}">Galeri</a>
                     <a href="{{ route('home') }}#ringkasan">Ringkasan lingkungan</a>
                 </nav>
             @endunless

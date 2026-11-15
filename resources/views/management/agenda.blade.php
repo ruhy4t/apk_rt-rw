@@ -17,12 +17,14 @@
                         @if ($event->description)
                             <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $event->description }}</p>
                         @endif
+                        <x-content-photo :content="$event" />
                         <details class="edit-section" @if ($errors->any() && old('_form') === 'edit-agenda-'.$event->id) open @endif>
                             <summary><x-icon name="edit" />Ubah agenda</summary>
-                        <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" action="{{ route('agenda.update', $event) }}">
+                        <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" enctype="multipart/form-data" action="{{ route('agenda.update', $event) }}">
                             <input type="hidden" name="_form" value="edit-agenda-{{ $event->id }}">
                             @csrf
                             @method('PATCH')
+                            <x-photo-input :id="'edit-agenda-photo-'.$event->id" :existing="(bool) $event->photo" />
                             <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="title" aria-label="Judul agenda" value="{{ $event->title }}" maxlength="180" required>
                             <textarea class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="description" aria-label="Keterangan agenda" rows="2" maxlength="10000">{{ $event->description }}</textarea>
                             <div class="grid gap-2 sm:grid-cols-2">
@@ -56,9 +58,10 @@
                 <h2 id="create-agenda-title" class="text-xl font-bold"><x-icon name="plus" />Tambah agenda</h2>
                 <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
             </div>
-            <form class="mt-4 space-y-4" method="POST" action="{{ route('agenda.store') }}">
+            <form class="mt-4 space-y-4" method="POST" enctype="multipart/form-data" action="{{ route('agenda.store') }}">
                 @csrf
                 <input type="hidden" name="_form" value="create-agenda">
+                <x-photo-input id="new-agenda-photo" />
                 @if (auth()->user()->hasRole('super_admin'))
                     <label class="block text-sm font-medium" for="rt_area_id">Cakupan
                         <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" id="rt_area_id" name="rt_area_id">

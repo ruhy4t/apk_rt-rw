@@ -21,12 +21,14 @@
                             <time class="text-xs text-slate-500">{{ $announcement->created_at->format('d-m-Y') }}</time>
                         </div>
                         <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $announcement->body }}</p>
+                        <x-content-photo :content="$announcement" />
                         <details class="edit-section" @if ($errors->any() && old('_form') === 'edit-announcements-'.$announcement->id) open @endif>
                             <summary><x-icon name="edit" />Ubah pengumuman</summary>
-                        <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" action="{{ route('announcements.update', $announcement) }}">
+                        <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" enctype="multipart/form-data" action="{{ route('announcements.update', $announcement) }}">
                             <input type="hidden" name="_form" value="edit-announcements-{{ $announcement->id }}">
                             @csrf
                             @method('PATCH')
+                            <x-photo-input :id="'edit-announcement-photo-'.$announcement->id" :existing="(bool) $announcement->photo" />
                             <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="title" aria-label="Judul pengumuman" value="{{ $announcement->title }}" maxlength="180" required>
                             <textarea class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="body" aria-label="Isi pengumuman" rows="3" maxlength="10000" required>{{ $announcement->body }}</textarea>
                             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -57,9 +59,10 @@
                 <button class="button" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
             </div>
             <p class="mt-4 text-sm text-slate-600">Pengumuman publik bisa dibaca tanpa login. Jangan cantumkan NIK, nomor KK, atau data pribadi warga di dalamnya.</p>
-            <form class="mt-4 space-y-4" method="POST" action="{{ route('announcements.store') }}">
+            <form class="mt-4 space-y-4" method="POST" enctype="multipart/form-data" action="{{ route('announcements.store') }}">
                 @csrf
                 <input type="hidden" name="_form" value="create-announcement">
+                <x-photo-input id="new-announcement-photo" />
                 @if (auth()->user()->hasRole('super_admin'))
                     <div>
                         <label class="mb-1 block text-sm font-medium" for="rt_area_id">Cakupan</label>

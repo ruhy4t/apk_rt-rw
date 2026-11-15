@@ -2,12 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedPersonalData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class StoredFile extends Model
 {
+    use HasEncryptedPersonalData;
+
+    protected const PERSONAL_FIELDS = [
+        'original_name' => '[protected]',
+    ];
+
     protected $fillable = [
         'uploaded_by',
         'disk',
@@ -19,7 +26,7 @@ class StoredFile extends Model
 
     protected function casts(): array
     {
-        return ['size_bytes' => 'integer'];
+        return ['size_bytes' => 'integer', 'private_data' => 'encrypted:array'];
     }
 
     public function fileable(): MorphTo

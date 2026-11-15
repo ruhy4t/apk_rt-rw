@@ -22,7 +22,7 @@ class CreateAdminUser extends Command
             return self::FAILURE;
         }
 
-        if (User::query()->where('username', $username)->exists()) {
+        if (User::query()->withUsername($username)->exists()) {
             $this->components->error('Nama pengguna tersebut sudah digunakan.');
 
             return self::FAILURE;

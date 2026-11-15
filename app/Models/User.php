@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedPersonalData;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -15,6 +16,14 @@ use Illuminate\Notifications\Notifiable;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
+    use HasEncryptedPersonalData;
+
+    protected const PERSONAL_FIELDS = [
+        'name' => '[protected]',
+        'username' => '[protected]',
+        'email' => null,
+    ];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -26,10 +35,16 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'private_data' => 'encrypted:array',
             'password' => 'hashed',
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
         ];
+    }
+
+    public function scopeWithUsername($query, string $username)
+    {
+        return $query->whereIn('username', [$username, static::personalLookup('username', $username)]);
     }
 
     public function rwArea(): BelongsTo

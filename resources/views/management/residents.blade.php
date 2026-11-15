@@ -7,7 +7,7 @@
         <section>
             <div class="page-heading">
                 <div><h1>Data rumah tangga dan warga</h1><p>Kelola data sesuai cakupan RT/RW yang ditugaskan.</p></div>
-                <button class="button button-primary" type="button" data-open-dialog="create-household"><x-icon name="plus" /><span data-button-label>Tambah rumah tangga & kepala keluarga</span></button>
+                <div class="flex flex-wrap gap-3"><a class="button" href="{{ route('residents.import.index') }}"><x-icon name="upload" />Impor Excel</a><button class="button button-primary" type="button" data-open-dialog="create-household"><x-icon name="plus" /><span data-button-label>Tambah rumah tangga & kepala keluarga</span></button></div>
             </div>
             <noscript><p class="mt-3 text-sm text-rose-700">Aktifkan JavaScript untuk membuka formulir rumah tangga.</p></noscript>
 
@@ -32,7 +32,7 @@
                         <div class="mt-4 divide-y divide-slate-100">
                             @forelse ($household->residents as $resident)
                                 <div class="member-row">
-                                    <div><p class="font-semibold">{{ $resident->full_name }} @if ($resident->relationship === 'Kepala Keluarga')<span class="badge"><x-icon name="household" />Kepala Keluarga</span>@endif</p><p class="text-slate-500">{{ $resident->relationship ?: 'Anggota rumah tangga' }}@if ($resident->phone) · {{ $resident->phone }}@endif</p></div>
+                                    <div><p class="font-semibold">{{ $resident->full_name }} @if ($resident->relationship === 'Kepala Keluarga')<span class="badge"><x-icon name="household" />Kepala Keluarga</span>@endif</p><p class="text-slate-500">{{ $resident->relationship ?: 'Anggota rumah tangga' }}@if ($resident->phone) · {{ \App\Support\PersonalDataMask::number($resident->phone) }}@endif</p></div>
                                     <a class="text-link shrink-0" href="{{ route('residents.edit', $resident) }}"><x-icon name="edit" />Ubah data</a>
                                 </div>
                             @empty
@@ -81,6 +81,7 @@
                         </dialog>
                         <details class="mt-3 text-sm">
                             <summary class="cursor-pointer font-semibold text-brand-800"><x-icon name="edit" />Perbarui nomor KK</summary>
+                            @if ($household->family_card_number)<p class="mt-2 text-sm text-slate-500">Nomor KK saat ini: {{ \App\Support\PersonalDataMask::number($household->family_card_number) }}</p>@endif
                             <form class="mt-3 flex flex-wrap items-end gap-2" method="POST" action="{{ route('households.identity', $household) }}">
                                 @csrf
                                 @method('PATCH')
