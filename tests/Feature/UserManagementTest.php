@@ -16,6 +16,37 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_navigation_shows_identity_and_separates_user_and_area_settings(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'name' => 'Admin Uji']);
+        $target = User::factory()->create(['role' => 'rw_operator', 'name' => 'Pengurus Uji']);
+
+        $this->actingAs($admin)->get(route('users.index'))->assertOk()
+            ->assertSee('Admin Uji')->assertSee('Administrator')
+            ->assertSee('Tambah pengguna')->assertSee('Ubah akun')
+            ->assertSee('edit-user-'.$target->id)
+            ->assertDontSee('Tambah wilayah RW');
+        $this->get(route('admin.setup'))->assertOk()
+            ->assertSee('Tambah wilayah RW')->assertSee('Wilayah terdaftar')
+            ->assertDontSee('Akun aplikasi')->assertDontSee('Tambah pengguna');
+    }
+
+    public function test_failed_user_creation_reopens_dialog_without_flashing_password(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $this->actingAs($admin)->from(route('users.index'))->post(route('users.store'), [
+            '_form' => 'create-user',
+            'name' => 'Nama Uji',
+            'username' => 'uji',
+            'role' => 'resident',
+            'password' => 'secret-for-test',
+            'password_confirmation' => 'secret-for-test',
+        ])->assertRedirect(route('users.index'))->assertSessionHasErrors()
+            ->assertSessionMissing('_old_input.password');
+        $this->get(route('users.index'))->assertOk()->assertSee('data-auto-open')
+            ->assertSee('Nama Uji')->assertDontSee('secret-for-test');
+    }
+
     public function test_rw_manager_can_only_see_and_manage_subordinates_in_own_rw(): void
     {
         $rw = RwArea::query()->create(['code' => 'RW1', 'name' => 'RW Satu']);
