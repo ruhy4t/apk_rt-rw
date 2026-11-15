@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
 use ZipArchive;
@@ -96,6 +97,49 @@ class ResidentImportTest extends TestCase
         $this->assertDatabaseHas('audit_events', ['action' => 'residents.imported']);
         $this->post(route('residents.import.store'), ['import_token' => $token])->assertSessionHasErrors('import');
         $this->assertDatabaseCount('residents', 2);
+    }
+
+    public function test_workbook_is_not_archived_and_only_encrypted_personal_values_are_persisted(): void
+    {
+        foreach (['local', 'public', 'b2'] as $disk) {
+            Storage::fake($disk);
+        }
+        $this->actingAs($this->staff());
+        $preview = $this->post(route('residents.import.preview'), ['file' => $this->upload([$this->row()])])->assertOk();
+        $this->assertDatabaseCount('residents', 0);
+        $this->assertDatabaseCount('stored_files', 0);
+        $sessionData = json_encode(session()->all());
+        foreach (['Kepala Uji', 'Alamat Uji', '0000000000000002', '081234567898'] as $value) {
+            $this->assertStringNotContainsString($value, $sessionData);
+        }
+        $this->post(route('residents.import.store'), ['import_token' => $this->token($preview)])
+            ->assertRedirect(route('residents.index'))->assertSessionHasNoErrors();
+
+        $resident = Resident::query()->firstOrFail();
+        $expected = [
+            'full_name' => 'Kepala Uji', 'relationship' => 'Kepala Keluarga',
+            'phone' => '081234567898', 'birthplace' => 'Kota Uji', 'birth_date' => '1990-01-01',
+            'gender' => 'Laki-laki', 'marital_status' => 'Kawin', 'education' => 'Sarjana',
+            'occupation' => 'Karyawan', 'residency_status' => 'Tetap',
+        ];
+        $payload = json_decode(Crypt::decryptString($resident->getRawOriginal('private_data')), true, flags: JSON_THROW_ON_ERROR);
+        foreach ($expected as $field => $value) {
+            $this->assertSame($value, $payload[$field]);
+            $this->assertNotSame($value, $resident->getRawOriginal($field));
+        }
+        $this->assertSame('0000000000000002', Crypt::decryptString($resident->getRawOriginal('national_id')));
+        $this->assertSame('Keyakinan Uji', Crypt::decryptString($resident->getRawOriginal('religion')));
+        $household = $resident->household;
+        $this->assertNull($household->getRawOriginal('address'));
+        $this->assertSame(['address' => 'Alamat Uji'], json_decode(Crypt::decryptString($household->getRawOriginal('private_data')), true, flags: JSON_THROW_ON_ERROR));
+        $this->assertSame('0000000000000001', Crypt::decryptString($household->getRawOriginal('family_card_number')));
+        $this->assertDatabaseCount('stored_files', 0);
+        $this->post(route('residents.import.preview'), ['file' => $this->upload([$this->row(['hubungan_keluarga' => 'Anak'])])])
+            ->assertOk()->assertDontSee('name="import_token"', false);
+        $this->assertDatabaseCount('residents', 1);
+        foreach (['local', 'public', 'b2'] as $disk) {
+            $this->assertSame([], Storage::disk($disk)->allFiles());
+        }
     }
 
     public function test_invalid_rows_and_other_rt_are_rejected_without_partial_writes(): void

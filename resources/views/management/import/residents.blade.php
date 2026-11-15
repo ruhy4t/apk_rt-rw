@@ -10,6 +10,7 @@
     @endunless
     <section class="panel">
         <div class="section-heading"><h2>Gunakan template yang disediakan</h2><a class="button" href="{{ route('residents.import.template') }}"><x-icon name="download" />Unduh template .xlsx</a></div>
+        <p class="mb-4 text-sm text-slate-600">File Excel tidak diarsipkan. Setelah Anda mengonfirmasi, hanya data hasil pembacaan yang disimpan ke database; data pribadi warga disimpan terenkripsi.</p>
         <ul class="list-inside list-disc space-y-2 text-sm text-slate-600">
             <li>Maksimal 200 warga dan 1 MiB per berkas. Gunakan satu sheet bernama <strong>Warga</strong>; nama dan urutan kolom jangan diubah.</li>
             <li>Semua kolom berformat <strong>Text</strong>. NIK/KK harus tepat 16 digit. Tanggal lahir memakai <strong>YYYY-MM-DD</strong>, bukan nomor tanggal Excel.</li>

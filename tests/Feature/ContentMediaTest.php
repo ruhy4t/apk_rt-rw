@@ -65,6 +65,28 @@ class ContentMediaTest extends TestCase
         $this->get('/')->assertOk()->assertSee(route('content-photos.show', $announcement->photo), false)->assertSee(route('content-photos.show', $event->photo), false);
     }
 
+    public function test_photo_content_is_stored_on_b2_and_not_on_application_disks(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+        $actor = $this->operator();
+        $upload = UploadedFile::fake()->image('photo.jpg', 400, 300);
+        $bytes = file_get_contents($upload->getPathname());
+        $this->actingAs($actor)->post(route('announcements.store'), [
+            'rt_area_id' => $actor->rt_area_id, 'title' => 'Foto B2 Uji', 'body' => 'Dokumentasi uji',
+            'audience' => 'residents', 'photo' => $upload,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $photo = Announcement::query()->firstOrFail()->photo;
+        $this->assertSame('b2', $photo->disk);
+        $this->assertSame($bytes, Storage::disk('b2')->get($photo->object_key));
+        $this->assertSame('foto.jpg', $photo->original_name);
+        $this->assertSame($upload->getSize(), $photo->size_bytes);
+        $this->assertSame([], Storage::disk('local')->allFiles());
+        $this->assertSame([], Storage::disk('public')->allFiles());
+        $this->assertDatabaseCount('stored_files', 1);
+    }
+
     public function test_public_photo_rechecks_parent_publication_and_private_photo_requires_matching_rt(): void
     {
         $actor = $this->operator();

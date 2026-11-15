@@ -8,6 +8,14 @@ Implementasi yang sedang disiapkan memakai **pembaca OOXML terbatas berbasis `Zi
 
 Alternatif bila kelak diperlukan dukungan Excel yang lebih luas: OpenSpout 4.x memiliki lisensi MIT dan deklarasi dukungan PHP 8.3/8.4/8.5. Library itu belum dipasang. Menambahnya perlu penilaian versi, lisensi, ukuran aktual artefak, advisori keamanan, serta persetujuan pemilik. Tidak ada biaya lisensi terpisah; penggunaan CPU/storage/database tetap mempunyai biaya operasional sesuai layanan. [Sumber proyek dan lisensi](https://github.com/openspout/openspout), [kebutuhan 4.x](https://raw.githubusercontent.com/openspout/openspout/4.x/composer.json).
 
+## Penyimpanan berkas dan hasil impor
+
+Workbook unggahan hanya dibaca dari berkas sementara upload PHP pada request pratinjau. Aplikasi tidak menyalin atau mengarsipkannya ke disk lokal/publik, B2, tabel database, atau lampiran. PHP membersihkan upload sementara pada akhir request. Konfirmasi memakai data yang telah dibaca dalam paket terenkripsi berumur maksimal 10 menit, bukan membaca ulang workbook tersimpan.
+
+Database baru menerima data setelah konfirmasi dan validasi ulang. Semua data pribadi warga masuk melalui model terenkripsi: nama, hubungan keluarga, alamat, tempat/tanggal lahir, jenis kelamin, agama, status perkawinan, pendidikan, pekerjaan, status kependudukan, NIK, KK, dan telepon. ID relasi, kode RT/rumah tangga, serta digest pencarian tetap merupakan kolom operasional. Impor ditolak bila enkripsi tambahan belum aktif. Tidak ada perubahan skema baru untuk aturan penyimpanan ini.
+
+Foto pengumuman, agenda, dan galeri menggunakan B2 privat melalui server aplikasi. Hanya metadata foto yang disimpan di database; isi foto tidak menjadi blob database dan tidak disimpan permanen pada disk Vercel. Kredensial B2 tetap hanya digunakan di server. Ini tidak berarti browser mengakses B2 menggunakan kredensial aplikasi.
+
 ## Alur yang harus terlihat
 
 1. **Unduh template** dari Data warga. Petunjuk menjelaskan kolom wajib, daftar nilai yang diterima, serta format identitas sebagai teks.
