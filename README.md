@@ -12,9 +12,9 @@ MVP saat ini mencakup portal publik; login akun yang dibuat pengurus; pengelolaa
 2. Salin `.env.example` menjadi `.env` dengan `Copy-Item .env.example .env`.
 3. Konfigurasi bawaan `.env.example` memakai SQLite lokal untuk melihat UI tanpa kredensial cloud. Jalankan `composer install`, `npm install`, `php artisan key:generate`, `php artisan migrate`, dan `npm run build`.
 4. Buat akun administrator lokal dengan `php artisan app:create-admin admin "Administrator RT RW"`. Kata sandi diminta secara interaktif.
-5. Pastikan virtual host Apache mengarah ke folder `D:\laragon\www\aplikasi-rt\public` (bukan root project), lalu buka **http://aplikasi-rt.test**. Restart Apache setelah mengubah konfigurasi.
+5. Jalankan `php artisan serve --host=127.0.0.1 --port=8000`, lalu buka **http://127.0.0.1:8000**. Hentikan server dengan `Ctrl+C`.
 
-SQLite tersebut hanya untuk preview lokal, bukan database production. Login administrator tersedia setelah perintah `app:create-admin`; halaman publik bisa dibuka tanpa login. Laragon dapat membuat domain `.test` otomatis dari nama folder project.
+SQLite tersebut hanya untuk preview lokal, bukan database production. Login administrator tersedia setelah perintah `app:create-admin`; halaman publik bisa dibuka tanpa login. Konfigurasi Laragon Apache/Nginx opsional, tetapi document root harus menunjuk ke folder `public`.
 
 Pengujian menggunakan SQLite in-memory: `php artisan test`.
 
