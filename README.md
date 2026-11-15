@@ -31,5 +31,6 @@ Pengujian menggunakan SQLite in-memory: `php artisan test`.
 - Sebelum menghubungkan Vercel/GitHub, verifikasi runtime PHP, konfigurasi build, penanganan sesi/cache/berkas pada lingkungan serverless, region database, dan TLS.
 - Konfigurasi Vercel menggunakan container PHP; hanya direktori `public` yang disajikan. `.dockerignore` membatasi file yang masuk ke image dan tidak memasukkan `.env`, storage lokal, atau database lokal.
 - Container menyetel batas lampiran `PRIVATE_FILE_MAX_KB=1024`; Laragon tetap memakai default 5120 KB. Jangan menaikkan batas container tanpa memastikan batas request Vercel.
+- Container Vercel mempercayai hanya header proxy alamat pengunjung dan protokol; jangan gunakan konfigurasi ini pada server yang dapat diakses langsung tanpa proxy tepercaya.
 - Sesi dan cache perlu penyimpanan bersama yang sesuai; filesystem container tidak permanen. Jangan gunakan contoh driver sesi `array` untuk login production. Kredensial, `APP_KEY`, dan pengaturan lingkungan harus dipisahkan antara Preview dan Production.
 - Pembuatan tabel, akun admin pertama, pengaturan secret, serta deployment production memerlukan persetujuan dan verifikasi tersendiri.

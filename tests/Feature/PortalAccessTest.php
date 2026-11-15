@@ -8,12 +8,62 @@ use App\Models\Resident;
 use App\Models\RtArea;
 use App\Models\RwArea;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class PortalAccessTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_vercel_proxy_preserves_https_and_client_ip_without_trusting_forwarded_host(): void
+    {
+        config(['trustedproxy.proxies' => '*']);
+        (new AppServiceProvider($this->app))->boot();
+        Route::get('/proxy-test', fn (Request $request) => response()->json([
+            'ip' => $request->ip(),
+            'url' => $request->url(),
+        ]));
+
+        try {
+            $this->withServerVariables([
+                'HTTP_HOST' => 'example.test',
+                'REMOTE_ADDR' => '10.0.0.1',
+                'HTTP_X_FORWARDED_FOR' => '203.0.113.1',
+                'HTTP_X_FORWARDED_PROTO' => 'https',
+                'HTTP_X_FORWARDED_HOST' => 'untrusted.test',
+            ])->get('http://example.test/proxy-test')
+                ->assertOk()
+                ->assertJson(['ip' => '203.0.113.1', 'url' => 'https://example.test/proxy-test']);
+
+            $this->get('http://example.test/dashboard')->assertRedirect('https://example.test/login');
+            $this->get('http://example.test/login')->assertSee('action="https://example.test/login"', false);
+        } finally {
+            TrustProxies::flushState();
+        }
+    }
+
+    public function test_local_requests_do_not_trust_forwarded_headers(): void
+    {
+        config(['trustedproxy.proxies' => null]);
+        TrustProxies::flushState();
+        Route::get('/proxy-test', fn (Request $request) => response()->json([
+            'ip' => $request->ip(),
+            'url' => $request->url(),
+        ]));
+
+        $this->withServerVariables([
+            'HTTP_HOST' => 'example.test',
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_X_FORWARDED_FOR' => '203.0.113.1',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ])->get('http://example.test/proxy-test')
+            ->assertOk()
+            ->assertJson(['ip' => '127.0.0.1', 'url' => 'http://example.test/proxy-test']);
+    }
 
     public function test_public_home_shows_only_published_public_announcements(): void
     {

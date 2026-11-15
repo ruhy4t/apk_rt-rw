@@ -38,6 +38,7 @@ ENV PORT=80 \
     LOG_CHANNEL=stderr \
     SESSION_ENCRYPT=true \
     SESSION_SECURE_COOKIE=true \
+    TRUST_VERCEL_PROXY=true \
     PRIVATE_FILE_MAX_KB=1024
 
 USER www-data
