@@ -61,7 +61,7 @@
                     @if (config('filesystems.private_files_enabled'))
                         <form class="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4" method="POST" enctype="multipart/form-data" action="{{ route('requests.files.store', $serviceRequest) }}">
                             @csrf
-                            <label class="text-sm font-medium">Lampiran PDF/JPG/PNG (maks. 5 MB)
+                            <label class="text-sm font-medium">Lampiran PDF/JPG/PNG (maks. {{ config('filesystems.private_file_max_kb') / 1024 }} MB)
                                 <input class="mt-1 block max-w-full text-sm" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
                             </label>
                             <button class="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800" type="submit">Unggah berkas privat</button>

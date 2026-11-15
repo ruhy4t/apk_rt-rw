@@ -4,6 +4,8 @@ return [
 
     'private_files_enabled' => env('B2_PRIVATE_FILES_ENABLED', false),
 
+    'private_file_max_kb' => (int) env('PRIVATE_FILE_MAX_KB', 5120),
+
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk

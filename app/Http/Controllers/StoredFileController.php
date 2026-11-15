@@ -24,7 +24,7 @@ class StoredFileController extends Controller
                 'required',
                 'file',
                 'mimetypes:application/pdf,image/jpeg,image/png',
-                'max:5120',
+                'max:'.config('filesystems.private_file_max_kb'),
             ],
         ]);
 

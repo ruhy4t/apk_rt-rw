@@ -4,7 +4,7 @@ Portal warga berbasis Laravel dengan halaman publik dan area privat. Kredensial 
 
 ## Status
 
-MVP saat ini mencakup portal publik; login akun yang dibuat pengurus; pengelolaan wilayah, akun, warga, pengumuman, agenda, transaksi/iuran, inventaris/peminjaman, dan permintaan layanan. Upload lampiran PDF/JPG/PNG hingga 5 MB dan unduh melalui streaming server tersedia untuk permintaan layanan, tetapi penyimpanan berkas privat dinonaktifkan secara default. Belum ada koneksi database production, konfigurasi Vercel, maupun deployment.
+MVP saat ini mencakup portal publik; login akun yang dibuat pengurus; pengelolaan wilayah, akun, warga, pengumuman, agenda, transaksi/iuran, inventaris/peminjaman, dan permintaan layanan. Upload lampiran PDF/JPG/PNG hingga 5 MB secara lokal dan 1 MB pada container Vercel serta unduh melalui streaming server tersedia untuk permintaan layanan, tetapi penyimpanan berkas privat dinonaktifkan secara default. Konfigurasi container Vercel disiapkan, tetapi belum diuji melalui deployment dan belum terhubung ke database production.
 
 ## Pengembangan lokal
 
@@ -29,3 +29,7 @@ Pengujian menggunakan SQLite in-memory: `php artisan test`.
 - Data keuangan dan inventaris publik hanya ditampilkan sebagai agregat yang ditandai pengurus; rincian transaksi, alamat, nomor telepon, dan permintaan layanan tetap privat.
 - Audit perubahan mencatat aktor, jenis aksi, dan ID objek saja; isi pribadi, kata sandi, dan nilai transaksi tidak disalin ke audit log.
 - Sebelum menghubungkan Vercel/GitHub, verifikasi runtime PHP, konfigurasi build, penanganan sesi/cache/berkas pada lingkungan serverless, region database, dan TLS.
+- Konfigurasi Vercel menggunakan container PHP; hanya direktori `public` yang disajikan. `.dockerignore` membatasi file yang masuk ke image dan tidak memasukkan `.env`, storage lokal, atau database lokal.
+- Container menyetel batas lampiran `PRIVATE_FILE_MAX_KB=1024`; Laragon tetap memakai default 5120 KB. Jangan menaikkan batas container tanpa memastikan batas request Vercel.
+- Sesi dan cache perlu penyimpanan bersama yang sesuai; filesystem container tidak permanen. Jangan gunakan contoh driver sesi `array` untuk login production. Kredensial, `APP_KEY`, dan pengaturan lingkungan harus dipisahkan antara Preview dan Production.
+- Pembuatan tabel, akun admin pertama, pengaturan secret, serta deployment production memerlukan persetujuan dan verifikasi tersendiri.

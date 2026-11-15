@@ -111,7 +111,7 @@ class CommunityModulesTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('requests.files.store', $serviceRequest), [
-                'file' => UploadedFile::fake()->create('lampiran.pdf', 100, 'application/pdf'),
+                'file' => UploadedFile::fake()->create('lampiran.pdf', 2048, 'application/pdf'),
             ])
             ->assertRedirect();
 
@@ -119,6 +119,45 @@ class CommunityModulesTest extends TestCase
         $this->assertSame('b2', $storedFile->disk);
         $this->assertStringStartsWith('service-requests/'.$serviceRequest->id.'/', $storedFile->object_key);
         Storage::disk('b2')->assertExists($storedFile->object_key);
+    }
+
+    public function test_private_upload_enforces_configured_one_megabyte_limit(): void
+    {
+        Storage::fake('b2');
+        config([
+            'filesystems.private_files_enabled' => true,
+            'filesystems.private_file_max_kb' => 1024,
+        ]);
+        $user = User::factory()->create(['role' => 'resident']);
+        [, $household] = $this->createHousehold('RT-01', 'KEL-01');
+        Resident::query()->create([
+            'household_id' => $household->id,
+            'user_id' => $user->id,
+            'full_name' => 'Warga Contoh',
+        ]);
+        $serviceRequest = ServiceRequest::query()->create([
+            'household_id' => $household->id,
+            'requester_id' => $user->id,
+            'category' => 'letter',
+            'subject' => 'Surat keterangan',
+            'description' => 'Permohonan contoh',
+            'status' => 'submitted',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('requests.index'))
+            ->assertOk()
+            ->assertSee('maks. 1 MB');
+
+        $this->post(route('requests.files.store', $serviceRequest), [
+            'file' => UploadedFile::fake()->create('tepat.pdf', 1024, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+
+        $this->post(route('requests.files.store', $serviceRequest), [
+            'file' => UploadedFile::fake()->create('terlalu-besar.pdf', 1025, 'application/pdf'),
+        ])->assertSessionHasErrors('file');
+
+        $this->assertDatabaseCount('stored_files', 1);
     }
 
     public function test_resident_cannot_upload_to_another_residents_request(): void
