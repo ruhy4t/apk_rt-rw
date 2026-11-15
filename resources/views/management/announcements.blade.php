@@ -3,13 +3,13 @@
 @section('title', 'Pengumuman')
 
 @section('content')
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <section>
-            <h1 class="text-2xl font-bold">Pengumuman</h1>
+            <h1>Pengumuman</h1>
             <p class="mt-2 text-sm text-slate-600">Pastikan pengumuman tidak memuat data pribadi yang tidak seharusnya dipublikasikan.</p>
             <div class="mt-6 space-y-4">
                 @forelse ($announcements as $announcement)
-                    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+                    <article class="rounded-lg border border-slate-200 bg-white p-5">
                         <div class="flex flex-wrap justify-between gap-3">
                             <div>
                                 <h2 class="font-semibold">{{ $announcement->title }}</h2>
@@ -22,13 +22,16 @@
                             <time class="text-xs text-slate-500">{{ $announcement->created_at->format('d-m-Y') }}</time>
                         </div>
                         <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $announcement->body }}</p>
+                        <details class="edit-section" @if ($errors->any() && old('_form') === 'edit-announcements-'.$announcement->id) open @endif>
+                            <summary><x-icon name="edit" />Ubah pengumuman</summary>
                         <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" action="{{ route('announcements.update', $announcement) }}">
+                            <input type="hidden" name="_form" value="edit-announcements-{{ $announcement->id }}">
                             @csrf
                             @method('PATCH')
-                            <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="title" value="{{ $announcement->title }}" maxlength="180" required>
-                            <textarea class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="body" rows="3" maxlength="10000" required>{{ $announcement->body }}</textarea>
+                            <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="title" aria-label="Judul pengumuman" value="{{ $announcement->title }}" maxlength="180" required>
+                            <textarea class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="body" aria-label="Isi pengumuman" rows="3" maxlength="10000" required>{{ $announcement->body }}</textarea>
                             <div class="flex flex-wrap items-center justify-between gap-3">
-                                <select class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="audience">
+                                <select class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="audience" aria-label="Audiens">
                                     <option value="public" @selected($announcement->audience === 'public')>Publik</option>
                                     <option value="residents" @selected($announcement->audience === 'residents')>Khusus warga</option>
                                 </select>
@@ -37,19 +40,20 @@
                                     <input type="checkbox" name="is_published" value="1" @checked($announcement->is_published)>
                                     Terbitkan
                                 </label>
-                                <button class="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800" type="submit">Perbarui</button>
+                                <button class="rounded-lg border border-brand-700 px-4 py-2 text-sm font-semibold text-brand-800" type="submit"><x-icon name="edit" /><span data-button-label>Perbarui</span></button>
                             </div>
                         </form>
+                        </details>
                     </article>
                 @empty
-                    <p class="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">Belum ada pengumuman.</p>
+                    <p class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">Belum ada pengumuman.</p>
                 @endforelse
             </div>
             <div class="mt-5">{{ $announcements->links() }}</div>
         </section>
 
-        <aside class="h-fit rounded-2xl border border-slate-200 bg-white p-5">
-            <h2 class="font-bold">Buat pengumuman</h2>
+        <aside class="h-fit rounded-lg border border-slate-200 bg-white p-5">
+            <h2 class="font-bold"><x-icon name="announcement" />Buat pengumuman</h2>
             <form class="mt-4 space-y-4" method="POST" action="{{ route('announcements.store') }}">
                 @csrf
                 @if (auth()->user()->hasRole('super_admin'))
@@ -95,7 +99,7 @@
                     <input type="checkbox" name="is_published" value="1">
                     Terbitkan sekarang
                 </label>
-                <button class="w-full rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Simpan pengumuman</button>
+                <button class="w-full rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan pengumuman</span></button>
             </form>
         </aside>
     </div>

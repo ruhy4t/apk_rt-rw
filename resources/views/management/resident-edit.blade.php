@@ -3,9 +3,9 @@
 @section('title', 'Ubah data warga')
 
 @section('content')
-    <h1 class="text-2xl font-bold">Ubah data warga</h1>
+    <h1>Ubah data warga</h1>
     <p class="mt-2 text-sm text-slate-600">Rumah tangga: {{ $resident->household->household_code }}</p>
-    <form class="mt-6 max-w-2xl space-y-4 rounded-2xl border border-slate-200 bg-white p-5" method="POST" action="{{ route('residents.details', $resident) }}">
+    <form class="mt-6 max-w-2xl space-y-4 rounded-lg border border-slate-200 bg-white p-5" method="POST" action="{{ route('residents.details', $resident) }}">
         @csrf
         @method('PATCH')
         @if ($resident->relationship !== 'Kepala Keluarga')
@@ -19,7 +19,7 @@
             </label>
         @endif
         @include('management.resident-fields', ['editingResident' => $resident])
-        <button class="rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Simpan perubahan</button>
-        <a class="ml-3 text-sm text-emerald-800 underline" href="{{ route('residents.index') }}">Kembali ke data warga</a>
+        <button class="rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan perubahan</span></button>
+        <a class="ml-3 text-sm text-brand-800 underline" href="{{ route('residents.index') }}">Kembali ke data warga</a>
     </form>
 @endsection

@@ -3,19 +3,19 @@
 @section('title', request()->routeIs('users.index') ? 'Pengguna' : 'Pengaturan wilayah')
 
 @section('content')
-    <h1 class="text-2xl font-bold">{{ request()->routeIs('users.index') ? 'Pengguna' : 'Pengaturan wilayah' }}</h1>
+    <h1>{{ request()->routeIs('users.index') ? 'Pengguna' : 'Pengaturan wilayah' }}</h1>
     <p class="mt-2 text-sm text-slate-600">{{ request()->routeIs('users.index') ? 'Kelola akun sesuai wilayah yang ditugaskan. Kata sandi awal dan hasil reset wajib diganti saat masuk.' : 'Kelola daftar wilayah RW dan RT. Akun pengguna dikelola di menu Pengguna.' }}</p>
 
     @if (request()->routeIs('admin.setup') && auth()->user()->hasRole('super_admin'))
     <div class="mt-6 flex flex-wrap gap-3">
-        <button class="rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white hover:bg-emerald-800" type="button" data-open-dialog="create-rw">Tambah wilayah RW</button>
-        <button class="rounded-lg border border-emerald-700 px-4 py-2.5 font-semibold text-emerald-800 hover:bg-emerald-50" type="button" data-open-dialog="create-rt">Tambah wilayah RT</button>
+        <button class="rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white hover:bg-brand-800" type="button" data-open-dialog="create-rw"><x-icon name="plus" /><span data-button-label>Tambah wilayah RW</span></button>
+        <button class="rounded-lg border border-brand-700 px-4 py-2.5 font-semibold text-brand-800 hover:bg-brand-50" type="button" data-open-dialog="create-rt"><x-icon name="plus" /><span data-button-label>Tambah wilayah RT</span></button>
     </div>
     <noscript><p class="mt-3 text-sm text-rose-700">Aktifkan JavaScript untuk membuka formulir wilayah.</p></noscript>
-    <dialog id="create-rw" aria-labelledby="create-rw-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'create-rw') data-auto-open @endif>
+    <dialog id="create-rw" aria-labelledby="create-rw-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'create-rw') data-auto-open @endif>
         <div class="flex items-center justify-between gap-4">
             <h2 id="create-rw-title" class="text-xl font-bold">Tambah wilayah RW</h2>
-            <button class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog>Tutup</button>
+            <button class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
         </div>
         @if ($errors->any() && old('_form') === 'create-rw')
             <div role="alert" class="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>
@@ -31,13 +31,13 @@
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="name" maxlength="120" required>
                 </label>
             </div>
-            <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Simpan RW</button>
+            <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan RW</span></button>
         </form>
     </dialog>
-    <dialog id="create-rt" aria-labelledby="create-rt-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'create-rt') data-auto-open @endif>
+    <dialog id="create-rt" aria-labelledby="create-rt-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'create-rt') data-auto-open @endif>
         <div class="flex items-center justify-between gap-4">
             <h2 id="create-rt-title" class="text-xl font-bold">Tambah wilayah RT</h2>
-            <button class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog>Tutup</button>
+            <button class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
         </div>
         @if ($errors->any() && old('_form') === 'create-rt')
             <div role="alert" class="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>
@@ -60,21 +60,21 @@
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="name" maxlength="120" required>
                 </label>
             </div>
-            <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Simpan RT</button>
+            <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan RT</span></button>
         </form>
     </dialog>
     @endif
 
     @if (request()->routeIs('users.index'))
-    <button class="mt-6 rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white hover:bg-emerald-800" type="button" data-open-dialog="create-user">Tambah pengguna</button>
+    <button class="mt-6 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white hover:bg-brand-800" type="button" data-open-dialog="create-user"><x-icon name="plus" /><span data-button-label>Tambah pengguna</span></button>
     <noscript><p class="mt-3 text-sm text-rose-700">Aktifkan JavaScript untuk membuka formulir pengguna.</p></noscript>
-    <dialog id="create-user" aria-labelledby="create-user-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if (($errors->any() && old('_form') === 'create-user') || request()->has('resident_page')) data-auto-open @endif>
+    <dialog id="create-user" aria-labelledby="create-user-title" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-xl backdrop:bg-slate-950/50" @if (($errors->any() && old('_form') === 'create-user') || request()->has('resident_page')) data-auto-open @endif>
     <div class="flex items-start justify-between gap-4">
         <div>
             <h2 id="create-user-title" class="text-xl font-bold">Tambah pengguna</h2>
             <p class="mt-1 text-sm text-slate-600">Sampaikan kata sandi awal melalui kanal yang aman.</p>
         </div>
-        <button class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog>Tutup</button>
+        <button class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
     </div>
     @if ($errors->any() && old('_form') === 'create-user')
         <div role="alert" class="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">
@@ -139,7 +139,7 @@
                 <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" type="password" name="password_confirmation" minlength="12" maxlength="255" autocomplete="new-password" required>
             </label>
         </div>
-        <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Buat akun</button>
+        <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="plus" /><span data-button-label>Buat akun</span></button>
     </form>
     @if ($unlinkedResidents->hasPages())
         <div class="mt-3 text-sm text-slate-600">Halaman pilihan data warga: {{ $unlinkedResidents->links() }}</div>
@@ -152,7 +152,7 @@
         <h2 class="text-lg font-bold">Wilayah terdaftar</h2>
         <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @forelse ($rwAreas as $rw)
-                <article class="rounded-2xl border border-slate-200 bg-white p-4">
+                <article class="rounded-lg border border-slate-200 bg-white p-4">
                     <h3 class="font-semibold">{{ $rw->name }} · {{ $rw->code }}</h3>
                     <ul class="mt-2 space-y-1 text-sm text-slate-600">
                         @forelse ($rw->rtAreas as $rt)
@@ -172,7 +172,7 @@
     @if (request()->routeIs('users.index'))
     <section class="mt-8">
         <h2 class="text-lg font-bold">Akun aplikasi</h2>
-        <div class="mt-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table class="w-full min-w-[42rem] text-left text-sm">
                 <thead class="bg-slate-100 text-slate-600"><tr><th class="p-3">Nama</th><th class="p-3">Nama pengguna</th><th class="p-3">Peran</th><th class="p-3">Cakupan</th><th class="p-3">Status</th><th class="p-3">Aksi</th></tr></thead>
                 <tbody class="divide-y divide-slate-100">
@@ -180,22 +180,22 @@
                         <tr>
                             <td class="p-3">{{ $user->name }}</td>
                             <td class="p-3">{{ $user->username }}</td>
-                            <td class="p-3">{{ $user->role }}</td>
+                            <td class="p-3">{{ match ($user->role) { 'super_admin' => 'Administrator', 'rw_operator' => 'Pengurus RW', 'rt_operator' => 'Pengurus RT', 'resident' => 'Warga', default => $user->role } }}</td>
                             <td class="p-3">{{ $user->rtArea?->name ?? $user->rwArea?->name ?? ($user->role === 'resident' ? 'Rumah tangga' : 'Semua wilayah') }}</td>
-                            <td class="p-3">{{ $user->is_active ? 'Aktif' : 'Nonaktif' }}</td>
+                            <td class="p-3"><span class="badge {{ $user->is_active ? 'badge-success' : 'badge-neutral' }}">{{ $user->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
                             <td class="p-3">
                                 @unless (auth()->user()->is($user))
                                     <form method="POST" action="{{ route('users.status', $user) }}">
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="is_active" value="{{ $user->is_active ? 0 : 1 }}">
-                                        <button class="font-semibold text-emerald-800 underline" type="submit">{{ $user->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
+                                        <button class="font-semibold text-brand-800 underline" type="submit"><x-icon name="power" /><span data-button-label>{{ $user->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</span></button>
                                     </form>
-                                    <button class="mt-2 font-semibold text-emerald-800 underline" type="button" data-open-dialog="edit-user-{{ $user->id }}">Ubah akun</button>
-                                    <dialog id="edit-user-{{ $user->id }}" aria-labelledby="edit-user-title-{{ $user->id }}" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'edit-user-'.$user->id) data-auto-open @endif>
+                                    <button class="mt-2 font-semibold text-brand-800 underline" type="button" data-open-dialog="edit-user-{{ $user->id }}"><x-icon name="edit" /><span data-button-label>Ubah akun</span></button>
+                                    <dialog id="edit-user-{{ $user->id }}" aria-labelledby="edit-user-title-{{ $user->id }}" class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/50" @if ($errors->any() && old('_form') === 'edit-user-'.$user->id) data-auto-open @endif>
                                         <div class="flex items-center justify-between gap-4">
                                             <h3 id="edit-user-title-{{ $user->id }}" class="text-lg font-bold">Ubah akun {{ $user->username }}</h3>
-                                            <button class="rounded-lg px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog>Tutup</button>
+                                            <button class="rounded-lg px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100" type="button" data-close-dialog><x-icon name="close" /><span data-button-label>Tutup</span></button>
                                         </div>
                                         <p class="mt-2 text-sm text-slate-600">Nama pengguna tetap. Perbarui nama atau reset kata sandi di bawah ini.</p>
                                         @if ($errors->any() && old('_form') === 'edit-user-'.$user->id)
@@ -208,7 +208,7 @@
                                             <label class="block">Nama
                                                 <input class="w-full rounded-lg border border-slate-300 px-2 py-1" name="name" value="{{ $user->name }}" maxlength="160" required>
                                             </label>
-                                            <button class="font-semibold text-emerald-800 underline" type="submit">Simpan nama</button>
+                                            <button class="font-semibold text-brand-800 underline" type="submit"><x-icon name="save" /><span data-button-label>Simpan nama</span></button>
                                         </form>
                                         <form class="mt-3 space-y-2" method="POST" action="{{ route('users.password', $user) }}">
                                             @csrf
@@ -220,7 +220,7 @@
                                             <label class="block">Ulangi kata sandi
                                                 <input class="w-full rounded-lg border border-slate-300 px-2 py-1" type="password" name="password_confirmation" minlength="12" maxlength="255" autocomplete="new-password" required>
                                             </label>
-                                            <button class="font-semibold text-rose-800 underline" type="submit">Reset kata sandi</button>
+                                            <button class="font-semibold text-rose-800 underline" type="submit"><x-icon name="reset" /><span data-button-label>Reset kata sandi</span></button>
                                         </form>
                                     </dialog>
                                 @endunless

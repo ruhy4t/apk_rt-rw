@@ -3,14 +3,14 @@
 @section('title', 'Keluarga saya')
 
 @section('content')
-    <h1 class="text-2xl font-bold">Keluarga saya</h1>
+    <h1>Keluarga saya</h1>
     @if (! $household)
-        <p class="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Akun Anda belum terhubung ke data rumah tangga. Hubungi pengurus RT.</p>
+        <p class="mt-4 rounded-md border border-slate-200 bg-white p-5 text-sm text-slate-600">Akun Anda belum terhubung ke data rumah tangga. Hubungi pengurus RT.</p>
     @else
         <p class="mt-2 text-sm text-slate-600">Kode rumah tangga: {{ $household->household_code }}</p>
         <section class="mt-6 space-y-3" aria-label="Anggota keluarga">
             @foreach ($household->residents as $resident)
-                <article class="rounded-xl border border-slate-200 bg-white p-5">
+                <article class="rounded-md border border-slate-200 bg-white p-5">
                     <h2 class="font-semibold">{{ $resident->full_name }}</h2>
                     <p class="mt-1 text-sm text-slate-600">{{ $resident->relationship ?: 'Anggota keluarga' }}</p>
                     <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">

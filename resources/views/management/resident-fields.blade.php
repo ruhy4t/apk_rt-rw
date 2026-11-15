@@ -1,3 +1,4 @@
+<div class="form-grid">
 <label class="block text-sm font-medium">Nama lengkap
     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="full_name" maxlength="160" value="{{ old('full_name', $editingResident?->full_name) }}" required>
 </label>
@@ -61,3 +62,4 @@
 <label class="block text-sm font-medium">Nomor telepon (opsional)
     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="phone" type="tel" maxlength="32" value="{{ old('phone', $editingResident?->phone) }}">
 </label>
+</div>

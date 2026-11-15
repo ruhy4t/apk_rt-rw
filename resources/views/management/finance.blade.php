@@ -3,7 +3,7 @@
 @section('title', 'Keuangan')
 
 @section('content')
-    <h1 class="text-2xl font-bold">Keuangan dan iuran</h1>
+    <h1>Keuangan dan iuran</h1>
     <p class="mt-2 text-sm text-slate-600">
         @if ($isResident)
             Riwayat yang ditampilkan hanya iuran rumah tangga Anda.
@@ -13,10 +13,12 @@
     </p>
 
     @unless ($isResident)
-        <div class="mt-6 grid gap-6 lg:grid-cols-2">
-            <form class="rounded-2xl border border-slate-200 bg-white p-5" method="POST" action="{{ route('finance.entries.store') }}">
+        <details class="mt-6 panel" @if ($errors->any()) open @endif>
+        <summary class="text-link"><x-icon name="plus" />Catat transaksi atau pembayaran iuran</summary>
+        <div class="mt-6 grid gap-6 xl:grid-cols-2">
+            <form class="rounded-lg border border-slate-200 bg-white p-5" method="POST" action="{{ route('finance.entries.store') }}">
                 @csrf
-                <h2 class="font-bold">Catat transaksi kas</h2>
+                <h2 class="font-bold"><x-icon name="wallet" />Catat transaksi kas</h2>
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <label class="text-sm font-medium">Wilayah
                         <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="rt_area_id" required>
@@ -48,12 +50,12 @@
                         <span>Tampilkan hanya dalam ringkasan agregat publik. Detail transaksi tidak ditampilkan.</span>
                     </label>
                 </div>
-                <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Simpan transaksi</button>
+                <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan transaksi</span></button>
             </form>
 
-            <form class="rounded-2xl border border-slate-200 bg-white p-5" method="POST" action="{{ route('finance.contributions.store') }}">
+            <form class="rounded-lg border border-slate-200 bg-white p-5" method="POST" action="{{ route('finance.contributions.store') }}">
                 @csrf
-                <h2 class="font-bold">Catat pembayaran iuran</h2>
+                <h2 class="font-bold"><x-icon name="wallet" />Catat pembayaran iuran</h2>
                 <div class="mt-4 space-y-4">
                     <label class="block text-sm font-medium">Rumah tangga
                         <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="household_id" required>
@@ -77,17 +79,18 @@
                         <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="note" maxlength="1000">
                     </label>
                 </div>
-                <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Simpan iuran</button>
+                <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan iuran</span></button>
             </form>
         </div>
+        </details>
     @endunless
 
     @unless ($isResident)
         <section class="mt-8">
             <h2 class="text-lg font-bold">Transaksi kas</h2>
-            <div class="mt-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
                 <table class="w-full min-w-[42rem] text-left text-sm">
-                    <thead class="bg-slate-100 text-slate-600"><tr><th class="p-3">Tanggal</th><th class="p-3">Wilayah</th><th class="p-3">Jenis</th><th class="p-3">Kategori</th><th class="p-3">Jumlah</th><th class="p-3">Publik agregat</th></tr></thead>
+                    <thead class="bg-slate-100 text-slate-600"><tr><th class="p-3">Tanggal</th><th class="p-3">Wilayah</th><th class="p-3">Jenis</th><th class="p-3">Kategori</th><th class="p-3 money">Jumlah</th><th class="p-3">Publik agregat</th></tr></thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($entries as $entry)
                             <tr>
@@ -95,7 +98,7 @@
                                 <td class="p-3">{{ $entry->rtArea->name }}</td>
                                 <td class="p-3">{{ $entry->direction === 'income' ? 'Penerimaan' : 'Pengeluaran' }}</td>
                                 <td class="p-3">{{ $entry->category }}</td>
-                                <td class="p-3">{{ 'Rp '.number_format($entry->amount, 0, ',', '.') }}</td>
+                                <td class="p-3 money font-semibold">{{ 'Rp '.number_format($entry->amount, 0, ',', '.') }}</td>
                                 <td class="p-3">{{ $entry->public_summary ? 'Ya' : 'Tidak' }}</td>
                             </tr>
                         @empty
@@ -110,15 +113,15 @@
 
     <section class="mt-8">
         <h2 class="text-lg font-bold">Riwayat iuran</h2>
-        <div class="mt-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table class="w-full min-w-[36rem] text-left text-sm">
-                <thead class="bg-slate-100 text-slate-600"><tr>@unless ($isResident)<th class="p-3">Rumah tangga</th>@endunless<th class="p-3">Periode</th><th class="p-3">Jumlah</th><th class="p-3">Tanggal bayar</th></tr></thead>
+                <thead class="bg-slate-100 text-slate-600"><tr>@unless ($isResident)<th class="p-3">Rumah tangga</th>@endunless<th class="p-3">Periode</th><th class="p-3 money">Jumlah</th><th class="p-3">Tanggal bayar</th></tr></thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($contributions as $contribution)
                         <tr>
                             @unless ($isResident)<td class="p-3">{{ $contribution->household->household_code }}</td>@endunless
                             <td class="p-3">{{ $contribution->period }}</td>
-                            <td class="p-3">{{ 'Rp '.number_format($contribution->amount, 0, ',', '.') }}</td>
+                            <td class="p-3 money font-semibold">{{ 'Rp '.number_format($contribution->amount, 0, ',', '.') }}</td>
                             <td class="p-3">{{ $contribution->paid_at?->format('d-m-Y') ?? 'Belum tercatat' }}</td>
                         </tr>
                     @empty

@@ -3,12 +3,12 @@
 @section('title', 'Agenda')
 
 @section('content')
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <section>
-            <h1 class="text-2xl font-bold">Agenda lingkungan</h1>
+            <h1>Agenda lingkungan</h1>
             <div class="mt-6 space-y-4">
                 @forelse ($events as $event)
-                    <article class="rounded-2xl border border-slate-200 bg-white p-5">
+                    <article class="rounded-lg border border-slate-200 bg-white p-5">
                         <div class="flex flex-wrap justify-between gap-2">
                             <h2 class="font-semibold">{{ $event->title }}</h2>
                             <span class="text-sm text-slate-500">{{ $event->starts_at->format('d-m-Y H:i') }}</span>
@@ -17,17 +17,20 @@
                         @if ($event->description)
                             <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $event->description }}</p>
                         @endif
+                        <details class="edit-section" @if ($errors->any() && old('_form') === 'edit-agenda-'.$event->id) open @endif>
+                            <summary><x-icon name="edit" />Ubah agenda</summary>
                         <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" action="{{ route('agenda.update', $event) }}">
+                            <input type="hidden" name="_form" value="edit-agenda-{{ $event->id }}">
                             @csrf
                             @method('PATCH')
-                            <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="title" value="{{ $event->title }}" maxlength="180" required>
-                            <textarea class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="description" rows="2" maxlength="10000">{{ $event->description }}</textarea>
+                            <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="title" aria-label="Judul agenda" value="{{ $event->title }}" maxlength="180" required>
+                            <textarea class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="description" aria-label="Keterangan agenda" rows="2" maxlength="10000">{{ $event->description }}</textarea>
                             <div class="grid gap-2 sm:grid-cols-2">
-                                <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" type="datetime-local" name="starts_at" value="{{ $event->starts_at->format('Y-m-d\TH:i') }}" required>
-                                <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" type="datetime-local" name="ends_at" value="{{ $event->ends_at?->format('Y-m-d\TH:i') }}">
+                                <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" type="datetime-local" name="starts_at" aria-label="Waktu mulai" value="{{ $event->starts_at->format('Y-m-d\TH:i') }}" required>
+                                <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm" type="datetime-local" name="ends_at" aria-label="Waktu selesai" value="{{ $event->ends_at?->format('Y-m-d\TH:i') }}">
                             </div>
                             <div class="flex flex-wrap items-center justify-between gap-3">
-                                <select class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="audience">
+                                <select class="rounded-lg border border-slate-300 px-3 py-2 text-sm" name="audience" aria-label="Audiens">
                                     <option value="public" @selected($event->audience === 'public')>Publik</option>
                                     <option value="residents" @selected($event->audience === 'residents')>Khusus warga</option>
                                 </select>
@@ -36,19 +39,20 @@
                                     <input type="checkbox" name="is_published" value="1" @checked($event->is_published)>
                                     Terbit
                                 </label>
-                                <button class="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800" type="submit">Perbarui</button>
+                                <button class="rounded-lg border border-brand-700 px-4 py-2 text-sm font-semibold text-brand-800" type="submit"><x-icon name="edit" /><span data-button-label>Perbarui</span></button>
                             </div>
                         </form>
+                        </details>
                     </article>
                 @empty
-                    <p class="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">Belum ada agenda.</p>
+                    <p class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">Belum ada agenda.</p>
                 @endforelse
             </div>
             <div class="mt-5">{{ $events->links() }}</div>
         </section>
 
-        <aside class="h-fit rounded-2xl border border-slate-200 bg-white p-5">
-            <h2 class="font-bold">Tambah agenda</h2>
+        <aside class="h-fit rounded-lg border border-slate-200 bg-white p-5">
+            <h2 class="font-bold"><x-icon name="calendar" />Tambah agenda</h2>
             <form class="mt-4 space-y-4" method="POST" action="{{ route('agenda.store') }}">
                 @csrf
                 @if (auth()->user()->hasRole('super_admin'))
@@ -92,7 +96,7 @@
                     </select>
                 </label>
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" value="1"> Terbitkan</label>
-                <button class="w-full rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white" type="submit">Simpan agenda</button>
+                <button class="w-full rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan agenda</span></button>
             </form>
         </aside>
     </div>
