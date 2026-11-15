@@ -8,13 +8,16 @@ MVP saat ini mencakup portal publik; login akun yang dibuat pengurus; pengelolaa
 
 ## Pengembangan lokal
 
-1. Buka Laragon, pilih **Start All**, lalu buka **Terminal** dari Laragon dan masuk ke folder project.
-2. Salin `.env.example` menjadi `.env` dengan `Copy-Item .env.example .env`.
-3. Konfigurasi bawaan `.env.example` memakai SQLite lokal untuk melihat UI tanpa kredensial cloud. Jalankan `composer install`, `npm install`, `php artisan key:generate`, `php artisan migrate`, dan `npm run build`.
-4. Buat akun administrator lokal dengan `php artisan app:create-admin admin "Administrator RT RW"`. Kata sandi diminta secara interaktif.
-5. Jalankan `php artisan serve --host=127.0.0.1 --port=8000`, lalu buka **http://127.0.0.1:8000**. Hentikan server dengan `Ctrl+C`.
+Installer browser di bawah ini hanya untuk Laragon lokal dengan aplikasi dan dependency yang sudah tersedia, `.env` yang sudah mempunyai `APP_KEY`, serta Apache yang mengarah ke folder `public`. Installer tidak mengatur deployment, tidak membuat database, dan tidak memindahkan data SQLite lama.
 
-SQLite tersebut hanya untuk preview lokal, bukan database production. Login administrator tersedia setelah perintah `app:create-admin`; halaman publik bisa dibuka tanpa login. Konfigurasi Laragon Apache/Nginx opsional, tetapi document root harus menunjuk ke folder `public`.
+1. Jalankan Apache dan MySQL di Laragon. Di phpMyAdmin atau HeidiSQL, buat database MySQL baru yang kosong. Siapkan user MySQL dengan izin hanya pada database tersebut, termasuk izin untuk membuat dan mengubah tabel.
+2. Buat file `storage/app/private/install-token` di luar folder `public` menggunakan editor teks. Isinya harus berupa kode acak rahasia minimal 32 karakter; jangan bagikan atau simpan di Git. Pastikan namanya tidak berakhiran `.txt`.
+3. Buka alamat lokal aplikasi di browser pada komputer yang sama, lalu tambahkan `/install`. Isi kode tersebut, nama database, kredensial MySQL lokal, dan akun admin awal. Installer hanya menghubungi MySQL pada `127.0.0.1:3306` dan menolak database yang berisi tabel atau view.
+4. Setelah berhasil, masuk dengan akun admin. Installer terkunci dan file kode dihapus. Cadangan konfigurasi lama disimpan di `.env.backup`; file ini sensitif dan tidak boleh dibagikan atau di-commit.
+
+Jika pemasangan gagal, jangan menghapus tabel atau membuka kunci pemasangan sembarangan. Catat pesan umum tanpa password, periksa database dan `.env.backup`, lalu minta bantuan sebelum mencoba lagi. Database SQLite lama tetap ada dan tidak otomatis dipindahkan. Installer tidak menyediakan pemulihan akun dan tidak boleh digunakan untuk production.
+
+Apache harus menolak akses ke file project di luar `public`, termasuk melalui virtual host default; aturan `.htaccess` disertakan untuk Apache. Pastikan konfigurasi server mengizinkan aturan tersebut dan uji perlindungannya sebelum menaruh kredensial di lokal.
 
 Pengujian menggunakan SQLite in-memory: `php artisan test`.
 
@@ -33,4 +36,4 @@ Pengujian menggunakan SQLite in-memory: `php artisan test`.
 - Container menyetel batas lampiran `PRIVATE_FILE_MAX_KB=1024`; Laragon tetap memakai default 5120 KB. Jangan menaikkan batas container tanpa memastikan batas request Vercel.
 - Container Vercel mempercayai hanya header proxy alamat pengunjung dan protokol; jangan gunakan konfigurasi ini pada server yang dapat diakses langsung tanpa proxy tepercaya.
 - Sesi dan cache perlu penyimpanan bersama yang sesuai; filesystem container tidak permanen. Jangan gunakan contoh driver sesi `array` untuk login production. Kredensial, `APP_KEY`, dan pengaturan lingkungan harus dipisahkan antara Preview dan Production.
-- Pembuatan tabel, akun admin pertama, pengaturan secret, serta deployment production memerlukan persetujuan dan verifikasi tersendiri.
+- Pembuatan tabel, akun admin pertama, pengaturan secret, serta deployment production memerlukan persetujuan dan verifikasi tersendiri. Installer browser hanya untuk lokal.

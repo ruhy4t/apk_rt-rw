@@ -8,7 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Household extends Model
 {
-    protected $fillable = ['rt_area_id', 'household_code', 'address'];
+    protected $fillable = ['rt_area_id', 'household_code', 'address', 'family_card_number', 'family_card_digest'];
+
+    protected $hidden = ['family_card_number', 'family_card_digest'];
+
+    protected function casts(): array
+    {
+        return ['family_card_number' => 'encrypted'];
+    }
 
     public function rtArea(): BelongsTo
     {

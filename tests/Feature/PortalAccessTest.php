@@ -122,6 +122,18 @@ class PortalAccessTest extends TestCase
         ])->assertSessionHasErrors('username');
     }
 
+    public function test_resident_navigation_shows_profile_but_not_management_links(): void
+    {
+        $user = User::factory()->create(['role' => 'resident']);
+
+        $this->actingAs($user)->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('Profil dan kata sandi')
+            ->assertSee('Jejak navigasi')
+            ->assertDontSee('href="'.route('users.index').'"', false)
+            ->assertDontSee('href="'.route('admin.setup').'"', false);
+    }
+
     public function test_resident_dashboard_only_discloses_their_household_code(): void
     {
         $rw = RwArea::query()->create(['code' => 'RW-01', 'name' => 'RW 01']);
