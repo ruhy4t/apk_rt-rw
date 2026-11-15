@@ -22,6 +22,10 @@
                         </div>
                         <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $announcement->body }}</p>
                         <x-content-photo :content="$announcement" />
+                        <x-document-signatory :content="$announcement" />
+                        @if ($announcement->is_published && ! $announcement->signatory_data)
+                            <p class="mt-3 text-xs text-slate-600">Penandatangan pengumuman lama belum dicatat. Untuk menerbitkan ulang, simpan sebagai draf terlebih dahulu.</p>
+                        @endif
                         <details class="edit-section" @if ($errors->any() && old('_form') === 'edit-announcements-'.$announcement->id) open @endif>
                             <summary><x-icon name="edit" />Ubah pengumuman</summary>
                         <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" enctype="multipart/form-data" action="{{ route('announcements.update', $announcement) }}">

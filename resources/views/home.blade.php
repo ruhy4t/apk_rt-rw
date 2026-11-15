@@ -32,6 +32,7 @@
                         <h3>{{ $announcement->title }}</h3>
                         <x-content-photo :content="$announcement" />
                         <p>{{ $announcement->body }}</p>
+                        <x-document-signatory :content="$announcement" />
                     </article>
                 @empty
                     <p class="empty-state mt-4">Belum ada pengumuman publik.</p>
@@ -49,6 +50,7 @@
                             <h3>{{ $event->title }}</h3>
                             <x-content-photo :content="$event" />
                             @if ($event->description)<p>{{ $event->description }}</p>@endif
+                            <x-document-signatory :content="$event" />
                         </div>
                     </article>
                 @empty

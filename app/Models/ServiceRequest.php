@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasEncryptedPersonalData;
+use App\Models\Concerns\HasSignatory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class ServiceRequest extends Model
 {
     use HasEncryptedPersonalData;
+    use HasSignatory;
 
     protected const PERSONAL_FIELDS = [
         'subject' => '[protected]',
@@ -26,6 +28,7 @@ class ServiceRequest extends Model
         'description',
         'response',
         'status',
+        'signatory_data',
     ];
 
     protected function casts(): array

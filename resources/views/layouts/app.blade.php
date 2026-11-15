@@ -1,5 +1,16 @@
 @php
     $workspace = auth()->check() && ! request()->routeIs('home', 'login');
+    $module = match (true) {
+        request()->routeIs('residents.*', 'households.*') => 'warga',
+        request()->routeIs('requests.*') => 'layanan',
+        request()->routeIs('finance.*') => 'keuangan',
+        request()->routeIs('assets.*') => 'inventaris',
+        request()->routeIs('announcements.*') => 'pengumuman',
+        request()->routeIs('agenda.*') => 'agenda',
+        request()->routeIs('gallery.*') => 'galeri',
+        request()->routeIs('profile.*', 'users.*', 'admin.*') => 'pengaturan',
+        default => 'beranda',
+    };
     $roleName = auth()->check() ? match (auth()->user()->role) {
         'super_admin' => 'Administrator', 'rw_operator' => 'Pengurus RW',
         'rt_operator' => 'Pengurus RT', 'resident' => 'Warga', default => 'Pengguna',
@@ -16,7 +27,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
 </head>
-<body class="{{ $workspace ? 'workspace' : 'public-site' }} min-h-screen bg-slate-50 text-slate-900 antialiased">
+<body data-module="{{ $module }}" class="{{ $workspace ? 'workspace' : 'public-site' }} min-h-screen bg-slate-50 text-slate-900 antialiased">
     <a href="#main-content" class="skip-link">Lewati ke konten</a>
     <header class="site-header">
         <div class="header-inner">

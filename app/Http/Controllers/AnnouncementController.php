@@ -6,9 +6,12 @@ use App\Models\Announcement;
 use App\Models\AuditEvent;
 use App\Services\AreaAccess;
 use App\Services\ContentPhotos;
+use App\Services\DocumentSignatory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AnnouncementController extends Controller
@@ -27,7 +30,7 @@ class AnnouncementController extends Controller
         return view('management.announcements', compact('announcements'));
     }
 
-    public function store(Request $request, AreaAccess $access, ContentPhotos $photos): RedirectResponse
+    public function store(Request $request, AreaAccess $access, ContentPhotos $photos, DocumentSignatory $signatory): RedirectResponse
     {
         $data = $request->validate([
             'rt_area_id' => ['nullable', 'integer', 'exists:rt_areas,id'],
@@ -46,19 +49,28 @@ class AnnouncementController extends Controller
         );
 
         $published = (bool) ($data['is_published'] ?? false);
-        $announcement = $photos->save(new Announcement, [
-            ...Arr::except($data, ['photo', 'remove_photo']),
-            'rt_area_id' => $rtAreaId,
-            'created_by' => $request->user()->id,
-            'is_published' => $published,
-            'published_at' => $published ? now() : null,
-        ], $request);
-        AuditEvent::record($request->user(), 'announcement.created', $announcement);
+        $announcement = DB::transaction(function () use ($request, $photos, $signatory, $data, $rtAreaId, $published) {
+            $announcement = new Announcement;
+            $values = [
+                ...Arr::except($data, ['photo', 'remove_photo']),
+                'rt_area_id' => $rtAreaId,
+                'created_by' => $request->user()->id,
+                'is_published' => $published,
+                'published_at' => $published ? now() : null,
+            ];
+            if ($published) {
+                $values['signatory_data'] = $signatory->capture($announcement, $rtAreaId);
+            }
+            $announcement = $photos->save($announcement, $values, $request);
+            AuditEvent::record($request->user(), 'announcement.created', $announcement);
+
+            return $announcement;
+        });
 
         return back()->with('status', 'Pengumuman berhasil disimpan.');
     }
 
-    public function update(Request $request, Announcement $announcement, AreaAccess $access, ContentPhotos $photos): RedirectResponse
+    public function update(Request $request, Announcement $announcement, AreaAccess $access, ContentPhotos $photos, DocumentSignatory $signatory): RedirectResponse
     {
         abort_unless(
             $announcement->rt_area_id === null
@@ -75,12 +87,19 @@ class AnnouncementController extends Controller
             ...ContentPhotos::rules(),
         ], ContentPhotos::messages());
 
-        $data['published_at'] = $data['is_published']
-            ? ($announcement->published_at ?? now())
-            : null;
-
-        $announcement = $photos->save($announcement, Arr::except($data, ['photo', 'remove_photo']), $request);
-        AuditEvent::record($request->user(), 'announcement.updated', $announcement);
+        DB::transaction(function () use ($request, $announcement, $photos, $signatory, $data) {
+            $announcement = Announcement::query()->whereKey($announcement->id)->lockForUpdate()->firstOrFail();
+            $values = Arr::except($data, ['photo', 'remove_photo']);
+            $values['published_at'] = $data['is_published'] ? ($announcement->published_at ?? now()) : null;
+            if ($data['is_published']) {
+                if ($announcement->is_published && ! $announcement->signatory_data) {
+                    throw ValidationException::withMessages(['is_published' => 'Pengumuman lama belum memiliki catatan penandatangan. Simpan sebagai draf dahulu, lalu terbitkan kembali setelah ketua ditetapkan.']);
+                }
+                $values['signatory_data'] = $signatory->capture($announcement, $announcement->rt_area_id);
+            }
+            $announcement = $photos->save($announcement, $values, $request);
+            AuditEvent::record($request->user(), 'announcement.updated', $announcement);
+        });
 
         return back()->with('status', 'Pengumuman berhasil diperbarui.');
     }

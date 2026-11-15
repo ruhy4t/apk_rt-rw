@@ -7,6 +7,9 @@
     <p class="mt-2 text-sm text-slate-600">{{ request()->routeIs('users.index') ? 'Kelola akun sesuai wilayah yang ditugaskan. Kata sandi awal dan hasil reset wajib diganti saat masuk.' : 'Aplikasi ini melayani satu RW dengan beberapa RT. Tetapkan RW sekali, lalu kelola daftar RT di bawahnya.' }}</p>
 
     @if (request()->routeIs('admin.setup') && auth()->user()->hasRole('super_admin'))
+    @unless ($chairmanRtReady && $chairmanRwReady)
+        <div class="notice notice-error mt-6" role="status">Pengaturan Ketua RT/RW belum aktif. Terapkan pembaruan database dari file UPDATE-DATABASE.sql terlebih dahulu. Wilayah masih dapat dibuat tanpa nama ketua.</div>
+    @endunless
     @if ($rwAreas->count() > 1)
         <div class="notice notice-error mt-6" role="alert">Data lama masih berisi lebih dari satu RW. Penambahan wilayah dinonaktifkan sampai RW yang digunakan ditentukan. Data lama tetap dipertahankan.</div>
     @elseif ($rwAreas->count() === 1)
@@ -36,10 +39,14 @@
                 <label class="text-sm font-medium">Kode RW
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="code" maxlength="32" required>
                 </label>
-                <label class="text-sm font-medium">Nama
+                <label class="text-sm font-medium">Nama wilayah RW
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="name" maxlength="120" required>
                 </label>
+                <label class="text-sm font-medium sm:col-span-2">Nama Ketua RW (opsional)
+                    <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="chairman_name" maxlength="160" autocomplete="off" @disabled(!$chairmanRwReady)>
+                </label>
             </div>
+            <p class="mt-3 text-sm text-slate-600">Boleh ditetapkan kemudian. Pengumuman dan agenda seluruh RW baru dapat diterbitkan setelah Ketua RW ditetapkan. Nama ini tidak membuat akun login.</p>
             <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan RW</span></button>
         </form>
     </dialog>
@@ -64,10 +71,14 @@
                 <label class="text-sm font-medium">Kode RT
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="code" maxlength="32" required>
                 </label>
-                <label class="text-sm font-medium sm:col-span-2">Nama RT
+                <label class="text-sm font-medium sm:col-span-2">Nama wilayah RT
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="name" maxlength="120" required>
                 </label>
+                <label class="text-sm font-medium sm:col-span-3">Nama Ketua RT (opsional)
+                    <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="chairman_name" maxlength="160" autocomplete="off" @disabled(!$chairmanRtReady)>
+                </label>
             </div>
+            <p class="mt-3 text-sm text-slate-600">Wilayah dan draf tetap bisa dibuat tanpa ketua. Penerbitan dokumen layanan, pengumuman, dan agenda RT menunggu penetapan Ketua RT. Nama ini tidak membuat akun login.</p>
             <button class="mt-4 rounded-lg bg-brand-700 px-4 py-2.5 font-semibold text-white" type="submit"><x-icon name="save" /><span data-button-label>Simpan RT</span></button>
         </form>
     </dialog>
@@ -163,9 +174,43 @@
             @forelse ($rwAreas as $rw)
                 <article class="rounded-lg border border-slate-200 bg-white p-4">
                     <h3 class="font-semibold">{{ $rw->name }} · {{ $rw->code }}</h3>
+                    <x-area-editor :area="$rw" level="RW" />
+                    <p class="mt-2 text-sm text-slate-600">Ketua RW: <strong class="text-slate-900">{{ $chairmanRwReady && $rw->chairman_name ? $rw->chairman_name : 'Belum ditetapkan' }}</strong></p>
+                    @if ($chairmanRwReady)
+                        <details class="edit-section" @if($errors->any() && old('_form') === 'chairman-rw-'.$rw->id) open @endif>
+                            <summary><x-icon name="edit" />Tetapkan / ganti Ketua RW</summary>
+                            <form class="mt-3 space-y-3" method="POST" action="{{ route('admin.rw.chairman', $rw) }}">
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="_form" value="chairman-rw-{{ $rw->id }}">
+                                <label class="block text-sm font-medium">Nama Ketua RW
+                                    <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="chairman_name" value="{{ $rw->chairman_name }}" maxlength="160" required autocomplete="off">
+                                </label>
+                                <p class="text-xs text-slate-500">Nama dan jabatan akan dicatat saat penerbitan. Dokumen lama tetap menggunakan nama yang dicatat sebelumnya.</p>
+                                <button class="button button-primary" type="submit"><x-icon name="save" /><span data-button-label>Simpan Ketua RW</span></button>
+                            </form>
+                        </details>
+                    @endif
                     <ul class="mt-2 space-y-1 text-sm text-slate-600">
                         @forelse ($rw->rtAreas as $rt)
-                            <li>{{ $rt->name }} · {{ $rt->code }}</li>
+                            <li class="border-t border-slate-200 py-3">
+                                <strong class="text-slate-900">{{ $rt->name }} · {{ $rt->code }}</strong>
+                                <x-area-editor :area="$rt" level="RT" />
+                                <p class="mt-1">Ketua RT: <strong class="text-slate-900">{{ $chairmanRtReady && $rt->chairman_name ? $rt->chairman_name : 'Belum ditetapkan' }}</strong></p>
+                                @if ($chairmanRtReady)
+                                    <details class="edit-section" @if($errors->any() && old('_form') === 'chairman-rt-'.$rt->id) open @endif>
+                                        <summary><x-icon name="edit" />Tetapkan / ganti Ketua RT</summary>
+                                        <form class="mt-3 space-y-3" method="POST" action="{{ route('admin.rt.chairman', $rt) }}">
+                                            @csrf @method('PATCH')
+                                            <input type="hidden" name="_form" value="chairman-rt-{{ $rt->id }}">
+                                            <label class="block font-medium">Nama Ketua RT
+                                                <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="chairman_name" value="{{ $rt->chairman_name }}" maxlength="160" required autocomplete="off">
+                                            </label>
+                                            <p class="text-xs text-slate-500">Untuk tanda tangan manual. Penggantian ketua tidak mengubah nama pada dokumen yang sudah diterbitkan.</p>
+                                            <button class="button button-primary" type="submit"><x-icon name="save" /><span data-button-label>Simpan Ketua RT</span></button>
+                                        </form>
+                                    </details>
+                                @endif
+                            </li>
                         @empty
                             <li>Belum ada RT.</li>
                         @endforelse

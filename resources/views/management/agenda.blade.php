@@ -18,6 +18,10 @@
                             <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $event->description }}</p>
                         @endif
                         <x-content-photo :content="$event" />
+                        <x-document-signatory :content="$event" />
+                        @if ($event->is_published && ! $event->signatory_data)
+                            <p class="mt-3 text-xs text-slate-600">Penandatangan agenda lama belum dicatat. Untuk menerbitkan ulang, simpan sebagai draf terlebih dahulu.</p>
+                        @endif
                         <details class="edit-section" @if ($errors->any() && old('_form') === 'edit-agenda-'.$event->id) open @endif>
                             <summary><x-icon name="edit" />Ubah agenda</summary>
                         <form class="mt-4 grid gap-3 border-t border-slate-100 pt-4" method="POST" enctype="multipart/form-data" action="{{ route('agenda.update', $event) }}">

@@ -7,7 +7,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RwArea extends Model
 {
-    protected $fillable = ['code', 'name'];
+    protected $fillable = ['code', 'name', 'chairman_name'];
+
+    protected $hidden = ['chairman_name'];
+
+    protected function casts(): array
+    {
+        return ['chairman_name' => 'encrypted'];
+    }
 
     public function rtAreas(): HasMany
     {

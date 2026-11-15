@@ -9,9 +9,12 @@ use App\Models\RwArea;
 use App\Models\User;
 use App\Services\AreaAccess;
 use App\Services\UserSessions;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -28,6 +31,8 @@ class AdministrationController extends Controller
         }
 
         return view('management.administration', [
+            'chairmanRtReady' => $request->routeIs('admin.setup') && $actor->hasRole('super_admin') && Schema::hasColumn('rt_areas', 'chairman_name'),
+            'chairmanRwReady' => $request->routeIs('admin.setup') && $actor->hasRole('super_admin') && Schema::hasColumn('rw_areas', 'chairman_name'),
             'rwAreas' => $rwAreas->with(['rtAreas' => function ($query) use ($actor) {
                 if ($actor->hasRole('rt_operator')) {
                     $query->whereKey($actor->rt_area_id ?? 0);
@@ -48,10 +53,13 @@ class AdministrationController extends Controller
 
     public function storeRw(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('super_admin'), 403);
         $data = $request->validate([
             'code' => ['required', 'string', 'max:32', 'unique:rw_areas,code'],
             'name' => ['required', 'string', 'max:120'],
+            'chairman_name' => ['nullable', 'string', 'max:160'],
         ]);
+        $data = $this->chairmanCreationData('rw_areas', $data);
 
         DB::transaction(function () use ($request, $data) {
             // A stable, existing row serializes the initial empty-RW case too.
@@ -72,11 +80,14 @@ class AdministrationController extends Controller
 
     public function storeRt(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->hasRole('super_admin'), 403);
         $data = $request->validate([
             'rw_area_id' => ['required', 'integer', 'exists:rw_areas,id'],
             'code' => ['required', 'string', 'max:32'],
             'name' => ['required', 'string', 'max:120'],
+            'chairman_name' => ['nullable', 'string', 'max:160'],
         ]);
+        $data = $this->chairmanCreationData('rt_areas', $data);
 
         if (RwArea::query()->count() !== 1) {
             throw ValidationException::withMessages([
@@ -98,6 +109,81 @@ class AdministrationController extends Controller
         AuditEvent::record($request->user(), 'rt_area.created', $area);
 
         return back()->with('status', 'Wilayah RT berhasil dibuat.');
+    }
+
+    public function updateRt(Request $request, RtArea $rtArea): RedirectResponse
+    {
+        return $this->updateArea($request, $rtArea);
+    }
+
+    public function updateRw(Request $request, RwArea $rwArea): RedirectResponse
+    {
+        return $this->updateArea($request, $rwArea);
+    }
+
+    private function updateArea(Request $request, RtArea|RwArea $area): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super_admin'), 403);
+        try {
+            DB::transaction(function () use ($request, $area) {
+                $locked = $area->newQuery()->whereKey($area->id)->lockForUpdate()->firstOrFail();
+                $unique = Rule::unique($area->getTable(), 'code')->ignore($locked->id);
+                if ($locked instanceof RtArea) {
+                    $unique->where('rw_area_id', $locked->rw_area_id);
+                }
+                $data = $request->validate([
+                    'code' => ['required', 'string', 'max:32', $unique],
+                    'name' => ['required', 'string', 'max:120'],
+                ], ['code.unique' => 'Kode wilayah tersebut sudah digunakan. Gunakan kode lain.']);
+                $locked->update($data);
+                AuditEvent::record($request->user(), $locked instanceof RtArea ? 'rt_area.updated' : 'rw_area.updated', $locked);
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['code' => 'Kode wilayah tersebut sudah digunakan. Muat ulang halaman dan gunakan kode lain.']);
+        }
+
+        return back()->with('status', 'Wilayah berhasil diperbarui. Hubungan data dan catatan penandatangan dokumen lama tetap dipertahankan.');
+    }
+
+    public function updateRtChairman(Request $request, RtArea $rtArea): RedirectResponse
+    {
+        return $this->updateChairman($request, $rtArea, 'rt_area.chairman_updated', 'Ketua RT');
+    }
+
+    public function updateRwChairman(Request $request, RwArea $rwArea): RedirectResponse
+    {
+        return $this->updateChairman($request, $rwArea, 'rw_area.chairman_updated', 'Ketua RW');
+    }
+
+    private function chairmanCreationData(string $table, array $data): array
+    {
+        $name = trim($data['chairman_name'] ?? '');
+        if ($name !== '' && ! Schema::hasColumn($table, 'chairman_name')) {
+            throw ValidationException::withMessages(['chairman_name' => 'Pengaturan ketua belum tersedia. Administrator perlu menerapkan pembaruan database terlebih dahulu.']);
+        }
+        if ($name === '') {
+            unset($data['chairman_name']);
+        } else {
+            $data['chairman_name'] = $name;
+        }
+
+        return $data;
+    }
+
+    private function updateChairman(Request $request, RtArea|RwArea $area, string $action, string $label): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('super_admin'), 403);
+        if (! Schema::hasColumn($area->getTable(), 'chairman_name')) {
+            throw ValidationException::withMessages(['chairman_name' => 'Pengaturan ketua belum tersedia. Administrator perlu menerapkan pembaruan database terlebih dahulu.']);
+        }
+        $data = $request->validate(['chairman_name' => ['required', 'string', 'max:160']]);
+        DB::transaction(function () use ($request, $area, $data, $action) {
+            $lockedArea = $area->newQuery()->whereKey($area->getKey())->lockForUpdate()->firstOrFail();
+            $lockedArea->update(['chairman_name' => trim($data['chairman_name'])]);
+            AuditEvent::record($request->user(), $action, $lockedArea);
+        });
+
+        return back()->with('status', $label.' berhasil ditetapkan. Nama pada dokumen yang sudah diterbitkan tetap menggunakan catatan saat penerbitan.');
     }
 
     public function storeUser(Request $request, AreaAccess $access): RedirectResponse

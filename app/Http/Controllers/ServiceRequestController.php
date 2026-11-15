@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\AuditEvent;
 use App\Models\ServiceRequest;
 use App\Services\AreaAccess;
+use App\Services\DocumentSignatory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -59,7 +61,7 @@ class ServiceRequestController extends Controller
         return back()->with('status', 'Permintaan layanan berhasil dikirim.');
     }
 
-    public function update(Request $request, ServiceRequest $serviceRequest, AreaAccess $access): RedirectResponse
+    public function update(Request $request, ServiceRequest $serviceRequest, AreaAccess $access, DocumentSignatory $signatory): RedirectResponse
     {
         abort_unless($request->user()->hasRole('super_admin', 'rw_operator', 'rt_operator'), 403);
         abort_unless(
@@ -73,17 +75,18 @@ class ServiceRequestController extends Controller
             'response' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        if (in_array($serviceRequest->status, ['completed', 'rejected'], true)) {
-            throw ValidationException::withMessages([
-                'status' => 'Permintaan yang sudah ditutup tidak dapat diubah.',
-            ]);
-        }
-
-        $serviceRequest->update([
-            ...$data,
-            'assigned_to' => $request->user()->id,
-        ]);
-        AuditEvent::record($request->user(), 'service_request.updated', $serviceRequest);
+        DB::transaction(function () use ($request, $serviceRequest, $data, $signatory) {
+            $serviceRequest = ServiceRequest::query()->whereKey($serviceRequest->id)->lockForUpdate()->firstOrFail();
+            if (in_array($serviceRequest->status, ['completed', 'rejected'], true)) {
+                throw ValidationException::withMessages(['status' => 'Permintaan yang sudah ditutup tidak dapat diubah.']);
+            }
+            $values = [...$data, 'assigned_to' => $request->user()->id];
+            if ($data['status'] === 'completed' && $serviceRequest->category === 'letter') {
+                $values['signatory_data'] = $signatory->capture($serviceRequest, $serviceRequest->household->rt_area_id);
+            }
+            $serviceRequest->update($values);
+            AuditEvent::record($request->user(), 'service_request.updated', $serviceRequest);
+        });
 
         return back()->with('status', 'Status permintaan berhasil diperbarui.');
     }

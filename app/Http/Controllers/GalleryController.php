@@ -7,6 +7,7 @@ use App\Models\GalleryItem;
 use App\Services\AreaAccess;
 use App\Services\ContentPhotos;
 use App\Services\ContentVisibility;
+use App\Services\VideoEmbed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
@@ -85,6 +86,9 @@ class GalleryController extends Controller
             $host = strtolower($parts['host'] ?? '');
             if (isset($parts['user']) || isset($parts['pass']) || (isset($parts['port']) && $parts['port'] !== 443) || ! preg_match('/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/D', $host) || preg_match('/\.(local|localhost|internal|test|invalid)$/D', $host)) {
                 throw ValidationException::withMessages(['video_url' => 'Gunakan tautan HTTPS dari situs video, tanpa nama pengguna atau kata sandi di alamatnya.']);
+            }
+            if (! VideoEmbed::fromUrl($data['video_url']) && (! $item || $data['video_url'] !== $item->video_url)) {
+                throw ValidationException::withMessages(['video_url' => 'Gunakan tautan video lengkap dari YouTube, Instagram, TikTok, atau Vimeo. Tautan pendek TikTok perlu dibuka dahulu untuk mendapatkan alamat video lengkap.']);
             }
         }
 

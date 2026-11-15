@@ -33,14 +33,18 @@ class ContentMediaTest extends TestCase
     private function operator(): User
     {
         $rw = RwArea::query()->create(['code' => '01', 'name' => 'RW Uji']);
-        $rt = RtArea::query()->create(['rw_area_id' => $rw->id, 'code' => '05', 'name' => 'RT Uji']);
+        $rt = RtArea::query()->create(['rw_area_id' => $rw->id, 'code' => '05', 'name' => 'RT Uji', 'chairman_name' => 'Ketua RT Uji']);
 
         return User::factory()->create(['role' => 'rt_operator', 'rt_area_id' => $rt->id]);
     }
 
     private function announcement(User $actor, array $changes = []): Announcement
     {
-        return Announcement::query()->create(array_replace(['rt_area_id' => $actor->rt_area_id, 'created_by' => $actor->id, 'title' => 'Pengumuman Uji', 'body' => 'Kegiatan lingkungan', 'audience' => 'public', 'is_published' => true], $changes));
+        return Announcement::query()->create(array_replace([
+            'rt_area_id' => $actor->rt_area_id, 'created_by' => $actor->id, 'title' => 'Pengumuman Uji',
+            'body' => 'Kegiatan lingkungan', 'audience' => 'public', 'is_published' => true,
+            'signatory_data' => ['name' => 'Ketua RT Uji', 'title' => 'Ketua RT 05', 'area_type' => 'rt', 'area_id' => $actor->rt_area_id, 'area_code' => '05', 'issued_at' => now()->toIso8601String()],
+        ], $changes));
     }
 
     private function attach($content, User $actor): StoredFile
@@ -137,17 +141,34 @@ class ContentMediaTest extends TestCase
         $this->assertDatabaseCount('stored_files', 0);
     }
 
-    public function test_gallery_accepts_https_video_links_without_remote_embeds_and_limits_private_listing(): void
+    public function test_gallery_embeds_supported_video_and_limits_private_listing(): void
     {
         $actor = $this->operator();
-        $base = ['rt_area_id' => $actor->rt_area_id, 'title' => 'Video Kegiatan', 'type' => 'video', 'video_url' => 'https://www.youtube.com/watch?v=synthetic', 'audience' => 'public', 'is_published' => 1];
+        $base = ['rt_area_id' => $actor->rt_area_id, 'title' => 'Video Kegiatan', 'type' => 'video', 'video_url' => 'https://www.youtube.com/watch?v=Test_vid001', 'audience' => 'public', 'is_published' => 1];
         $this->actingAs($actor)->post(route('gallery.store'), $base)->assertRedirect(route('gallery.index'))->assertSessionHasNoErrors();
         $this->assertDatabaseCount('gallery_items', 1);
-        $this->get(route('gallery.index'))->assertOk()->assertSee('Buka video di www.youtube.com')->assertDontSee('<iframe', false)->assertDontSee('youtube.com/embed', false);
-        $this->post(route('gallery.store'), [...$base, 'title' => 'Video Privat', 'audience' => 'residents'])->assertSessionHasNoErrors();
-        $this->post(route('gallery.store'), [...$base, 'title' => 'Video Draf', 'is_published' => 0])->assertSessionHasNoErrors();
+        $this->get(route('gallery.index'))->assertOk()->assertSee('Buka video di www.youtube.com')
+            ->assertSee('<iframe', false)->assertSee('https://www.youtube-nocookie.com/embed/Test_vid001', false)
+            ->assertSee('referrerpolicy="strict-origin-when-cross-origin"', false)->assertSee('loading="lazy"', false)
+            ->assertDontSee('<script src="https://', false)->assertDontSee('autoplay=1', false);
+        $this->post(route('gallery.store'), [...$base, 'title' => 'Video Privat', 'video_url' => 'https://youtu.be/Hidden_0001', 'audience' => 'residents'])->assertSessionHasNoErrors();
+        $this->post(route('gallery.store'), [...$base, 'title' => 'Video Draf', 'video_url' => 'https://youtu.be/Draft__0001', 'is_published' => 0])->assertSessionHasNoErrors();
         auth()->forgetGuards();
-        $this->get(route('gallery.index'))->assertOk()->assertSee('Video Kegiatan')->assertDontSee('Video Privat')->assertDontSee('Video Draf');
+        $this->get(route('gallery.index'))->assertOk()->assertSee('Video Kegiatan')->assertDontSee('Video Privat')->assertDontSee('Video Draf')
+            ->assertDontSee('Hidden_0001')->assertDontSee('Draft__0001');
+    }
+
+    public function test_new_unsupported_video_urls_are_rejected_and_legacy_links_remain_readable(): void
+    {
+        $actor = $this->operator();
+        $base = ['rt_area_id' => $actor->rt_area_id, 'created_by' => $actor->id, 'title' => 'Video Lama', 'type' => 'video', 'video_url' => 'https://example.org/video/legacy', 'audience' => 'public', 'is_published' => 1];
+        $item = GalleryItem::query()->create($base);
+        $this->get(route('gallery.index'))->assertOk()->assertSee('Video Lama')->assertDontSee('<iframe', false)->assertSee('belum dapat diputar di galeri');
+        $this->actingAs($actor)->patch(route('gallery.update', $item), $base)->assertSessionHasNoErrors();
+        $this->post(route('gallery.store'), $base)->assertSessionHasErrors('video_url');
+        $this->patch(route('gallery.update', $item), [...$base, 'video_url' => 'https://example.org/video/new'])->assertSessionHasErrors('video_url');
+        $this->assertSame($base['video_url'], $item->fresh()->video_url);
+        $this->assertDatabaseCount('gallery_items', 1);
     }
 
     public function test_gallery_rejects_unsafe_video_urls_and_resident_writes(): void

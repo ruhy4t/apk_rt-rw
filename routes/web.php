@@ -84,6 +84,10 @@ Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivat
         Route::get('/setup', [AdministrationController::class, 'index'])->name('setup');
         Route::post('/rw-areas', [AdministrationController::class, 'storeRw'])->name('rw.store');
         Route::post('/rt-areas', [AdministrationController::class, 'storeRt'])->name('rt.store');
+        Route::patch('/rt-areas/{rtArea}', [AdministrationController::class, 'updateRt'])->name('rt.update');
+        Route::patch('/rw-areas/{rwArea}', [AdministrationController::class, 'updateRw'])->name('rw.update');
+        Route::patch('/rt-areas/{rtArea}/chairman', [AdministrationController::class, 'updateRtChairman'])->name('rt.chairman');
+        Route::patch('/rw-areas/{rwArea}/chairman', [AdministrationController::class, 'updateRwChairman'])->name('rw.chairman');
         Route::post('/users', [AdministrationController::class, 'storeUser'])->name('users.store');
         Route::patch('/users/{user}/status', [AdministrationController::class, 'setUserStatus'])->name('users.status');
     });

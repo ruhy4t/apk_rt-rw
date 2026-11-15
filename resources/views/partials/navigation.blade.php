@@ -14,7 +14,7 @@
 <div class="nav-group">
     @foreach ($navigation as [$label, $route, $patterns, $visible, $icon])
         @if ($visible && \Illuminate\Support\Facades\Route::has($route))
-            <a class="nav-link" href="{{ route($route) }}" @if (request()->routeIs(...$patterns)) aria-current="page" @endif><span class="nav-label"><x-icon :name="$icon" />{{ $label }}</span><span aria-hidden="true">{{ request()->routeIs(...$patterns) ? '•' : '›' }}</span></a>
+            <a class="nav-link" data-tone="{{ $icon }}" href="{{ route($route) }}" @if (request()->routeIs(...$patterns)) aria-current="page" @endif><span class="nav-label"><x-icon :name="$icon" />{{ $label }}</span><span aria-hidden="true">{{ request()->routeIs(...$patterns) ? '•' : '›' }}</span></a>
         @endif
     @endforeach
 </div>

@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Models\CommunityEvent;
 use App\Models\FinancialEntry;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class PublicHomeController extends Controller
@@ -21,7 +22,7 @@ class PublicHomeController extends Controller
             })
             ->latest('published_at')
             ->limit(5)
-            ->get(['id', 'title', 'body', 'published_at']);
+            ->get(['id', 'title', 'body', 'published_at', ...(Schema::hasColumn('announcements', 'signatory_data') ? ['signatory_data'] : [])]);
 
         $events = CommunityEvent::query()
             ->with('photo')
@@ -30,7 +31,7 @@ class PublicHomeController extends Controller
             ->where('starts_at', '>=', now())
             ->orderBy('starts_at')
             ->limit(5)
-            ->get(['id', 'title', 'description', 'starts_at']);
+            ->get(['id', 'title', 'description', 'starts_at', ...(Schema::hasColumn('community_events', 'signatory_data') ? ['signatory_data'] : [])]);
 
         $financialTotals = FinancialEntry::query()
             ->where('public_summary', true)

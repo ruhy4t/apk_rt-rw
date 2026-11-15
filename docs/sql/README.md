@@ -1,5 +1,10 @@
 # SQL skema idempoten — TiDB production dan MySQL lokal
 
+Gunakan **satu berkas utama**: `D:\laragon\www\aplikasi-rt\docs\UPDATE-DATABASE.sql`. File yang sama menyiapkan pembaruan akun/identitas warga, kolom enkripsi, dan galeri untuk **MySQL 8+ Laragon maupun TiDB dengan foreign key aktif (6.6+)**. Pilih database tujuan yang benar lalu jalankan seluruh file melalui satu koneksi. Jalankan terpisah bila kedua lingkungan perlu diperbarui. Tidak perlu mengimpor lagi file per bagian `00`?`04` setelah memakai paket ini. File per bagian di folder ini dipertahankan sebagai referensi teknis. Paket lama `UPDATE-DATABASE-TIDB.sql` telah digantikan oleh nama tunggal ini.
+
+Backup yang teruji dan uji pada salinan engine/versi yang sama tetap wajib sebelum perubahan. Hentikan pada error pertama; jangan menjalankan import bersamaan. Skrip melewati nama struktur yang sudah ada, tetapi tidak memperbaiki definisi yang berbeda, mengaktifkan enkripsi, atau mengenkripsi data lama. TiDB mendokumentasikan `PREPARE` dan `EXECUTE` sebagai kompatibel MySQL: [PREPARE TiDB](https://docs.pingcap.com/tidb/stable/sql-statement-prepare/), [EXECUTE TiDB](https://docs.pingcap.com/tidb/stable/sql-statement-execute/), [prepared statements MySQL](https://dev.mysql.com/doc/refman/8.0/en/sql-prepared-statements.html). Paket gabungan baru diperiksa statis, belum diuji eksekusi ulang pada engine MySQL/TiDB.
+
+
 File ini disiapkan untuk **review dan impor manual**, belum dijalankan oleh agen pada database mana pun. MySQL Laragon adalah lokal; TiDB Cloud adalah production. Tidak ada koneksi, kredensial, nama database production, data warga, atau pengaturan Vercel di dalam SQL.
 
 ## Urutan penggunaan

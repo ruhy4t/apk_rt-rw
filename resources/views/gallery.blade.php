@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Galeri foto dan video')
 @section('content')
-    <div class="page-heading"><div><h1>Galeri foto dan video</h1><p>Dokumentasi kegiatan lingkungan. Video dibuka di situs asal.</p></div>
+    <div class="page-heading"><div><h1>Galeri foto dan video</h1><p>Dokumentasi kegiatan lingkungan. Tonton video langsung di galeri.</p></div>
         @if ($canCreate && $ready)<button class="button button-primary" type="button" data-open-dialog="create-gallery"><x-icon name="plus" /><span data-button-label>Tambah foto atau video</span></button>@endif
     </div>
     @unless ($ready)
@@ -15,6 +15,7 @@
                     @if ($item->type === 'photo')<x-content-photo :content="$item" />@endif
                     @if ($item->description)<p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $item->description }}</p>@endif
                     @if ($item->type === 'video')
+                        <x-video-embed :url="$item->video_url" :title="$item->title" />
                         <a class="button mt-4" href="{{ $item->video_url }}" target="_blank" rel="noopener noreferrer nofollow"><x-icon name="video" />Buka video di {{ parse_url($item->video_url, PHP_URL_HOST) }}</a>
                     @endif
                     @if ($canCreate && ($item->rt_area_id === null ? auth()->user()->hasRole('super_admin') : $areas->contains('id', $item->rt_area_id)))
@@ -52,7 +53,7 @@
                 <label class="block text-sm font-medium">Keterangan (opsional)<textarea class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="description" rows="3" maxlength="3000">{{ old('_form') === 'create-gallery' ? old('description') : '' }}</textarea></label>
                 <label class="block text-sm font-medium">Jenis<select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="type" data-gallery-type><option value="photo">Foto</option><option value="video" @selected(old('_form') === 'create-gallery' && old('type') === 'video')>Tautan video</option></select></label>
                 <div data-gallery-photo><x-photo-input id="new-gallery-photo" /></div>
-                <div data-gallery-video><label class="block text-sm font-medium">Tautan video HTTPS<input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" type="url" name="video_url" maxlength="2048" placeholder="https://www.youtube.com/watch?v=..." value="{{ old('_form') === 'create-gallery' ? old('video_url') : '' }}"></label><p class="mt-1 text-xs text-slate-500">YouTube, Instagram, TikTok, atau situs video lain. Tautan dibuka di tab baru; video tidak diunduh atau diputar otomatis.</p></div>
+                <div data-gallery-video><label class="block text-sm font-medium">Tautan video HTTPS<input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" type="url" name="video_url" maxlength="2048" placeholder="https://www.youtube.com/watch?v=..." value="{{ old('_form') === 'create-gallery' ? old('video_url') : '' }}"></label><p class="mt-1 text-xs text-slate-500">YouTube, Instagram, TikTok, atau Vimeo ditampilkan sebagai embed. Gunakan tautan video lengkap, bukan kode HTML. Video harus mengizinkan penyematan dan tidak diputar otomatis.</p></div>
                 <label class="block text-sm font-medium">Audiens<select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="audience"><option value="residents">Khusus warga</option><option value="public">Publik</option></select></label>
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" value="1">Terbitkan sekarang</label>
                 <button class="button button-primary w-full" type="submit"><x-icon name="save" /><span data-button-label>Simpan item galeri</span></button>

@@ -6,9 +6,12 @@ use App\Models\AuditEvent;
 use App\Models\CommunityEvent;
 use App\Services\AreaAccess;
 use App\Services\ContentPhotos;
+use App\Services\DocumentSignatory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AgendaController extends Controller
@@ -27,7 +30,7 @@ class AgendaController extends Controller
         return view('management.agenda', compact('events'));
     }
 
-    public function store(Request $request, AreaAccess $access, ContentPhotos $photos): RedirectResponse
+    public function store(Request $request, AreaAccess $access, ContentPhotos $photos, DocumentSignatory $signatory): RedirectResponse
     {
         $data = $request->validate([
             'rt_area_id' => ['nullable', 'integer', 'exists:rt_areas,id'],
@@ -47,18 +50,25 @@ class AgendaController extends Controller
             403
         );
 
-        $event = $photos->save(new CommunityEvent, [
-            ...Arr::except($data, ['photo', 'remove_photo']),
-            'rt_area_id' => $rtAreaId,
-            'created_by' => $request->user()->id,
-            'is_published' => (bool) ($data['is_published'] ?? false),
-        ], $request);
-        AuditEvent::record($request->user(), 'event.created', $event);
+        DB::transaction(function () use ($request, $photos, $signatory, $data, $rtAreaId) {
+            $event = new CommunityEvent;
+            $values = [
+                ...Arr::except($data, ['photo', 'remove_photo']),
+                'rt_area_id' => $rtAreaId,
+                'created_by' => $request->user()->id,
+                'is_published' => (bool) ($data['is_published'] ?? false),
+            ];
+            if ($values['is_published']) {
+                $values['signatory_data'] = $signatory->capture($event, $rtAreaId);
+            }
+            $event = $photos->save($event, $values, $request);
+            AuditEvent::record($request->user(), 'event.created', $event);
+        });
 
         return back()->with('status', 'Agenda berhasil disimpan.');
     }
 
-    public function update(Request $request, CommunityEvent $event, AreaAccess $access, ContentPhotos $photos): RedirectResponse
+    public function update(Request $request, CommunityEvent $event, AreaAccess $access, ContentPhotos $photos, DocumentSignatory $signatory): RedirectResponse
     {
         abort_unless(
             $event->rt_area_id === null
@@ -77,8 +87,18 @@ class AgendaController extends Controller
             ...ContentPhotos::rules(),
         ], ContentPhotos::messages());
 
-        $event = $photos->save($event, Arr::except($data, ['photo', 'remove_photo']), $request);
-        AuditEvent::record($request->user(), 'event.updated', $event);
+        DB::transaction(function () use ($request, $event, $photos, $signatory, $data) {
+            $event = CommunityEvent::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+            $values = Arr::except($data, ['photo', 'remove_photo']);
+            if ($data['is_published']) {
+                if ($event->is_published && ! $event->signatory_data) {
+                    throw ValidationException::withMessages(['is_published' => 'Agenda lama belum memiliki catatan penandatangan. Simpan sebagai draf dahulu, lalu terbitkan kembali setelah ketua ditetapkan.']);
+                }
+                $values['signatory_data'] = $signatory->capture($event, $event->rt_area_id);
+            }
+            $event = $photos->save($event, $values, $request);
+            AuditEvent::record($request->user(), 'event.updated', $event);
+        });
 
         return back()->with('status', 'Agenda berhasil diperbarui.');
     }

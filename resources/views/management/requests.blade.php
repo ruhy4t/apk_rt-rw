@@ -49,6 +49,10 @@
                     <time class="text-xs text-slate-500">{{ $serviceRequest->created_at->format('d-m-Y H:i') }}</time>
                 </div>
                 <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $serviceRequest->description }}</p>
+                <x-document-signatory :content="$serviceRequest" />
+                @if ($serviceRequest->category === 'letter' && $serviceRequest->status === 'completed' && ! $serviceRequest->signatory_data)
+                    <p class="mt-3 text-xs text-slate-600">Penandatangan surat lama belum dicatat. Data ketua saat ini tidak otomatis diterapkan pada surat ini.</p>
+                @endif
                 @if ($serviceRequest->response)
                     <div class="mt-4 rounded-md bg-brand-50 p-4 text-sm text-brand-950">
                         <p class="font-semibold">Tanggapan pengurus</p>

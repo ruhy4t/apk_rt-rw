@@ -20,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['family_card_number', 'national_id', 'religion', 'phone', 'full_name', 'birthplace', 'birth_date', 'address', 'description', 'response', 'subject', 'note', 'purpose', 'name', 'email', 'import_token', 'captcha']);
+        $exceptions->dontFlash(['family_card_number', 'national_id', 'religion', 'phone', 'full_name', 'birthplace', 'birth_date', 'address', 'description', 'response', 'subject', 'note', 'purpose', 'name', 'email', 'import_token', 'captcha', 'chairman_name']);
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

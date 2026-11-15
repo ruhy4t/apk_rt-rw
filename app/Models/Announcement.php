@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSignatory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Announcement extends Model
 {
+    use HasSignatory;
+
     protected $fillable = [
         'rt_area_id',
         'created_by',
@@ -16,6 +19,7 @@ class Announcement extends Model
         'audience',
         'is_published',
         'published_at',
+        'signatory_data',
     ];
 
     protected function casts(): array
