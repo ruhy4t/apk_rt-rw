@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdministrationController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AreaCorrectionController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ContentPhotoController;
@@ -86,6 +87,7 @@ Route::middleware(['auth', 'active', EnsurePasswordChanged::class, PreventPrivat
         Route::post('/rt-areas', [AdministrationController::class, 'storeRt'])->name('rt.store');
         Route::patch('/rt-areas/{rtArea}', [AdministrationController::class, 'updateRt'])->name('rt.update');
         Route::patch('/rw-areas/{rwArea}', [AdministrationController::class, 'updateRw'])->name('rw.update');
+        Route::post('/rw-areas/{rwArea}/convert-to-rt', [AreaCorrectionController::class, 'convertRwToRt'])->name('rw.convert-to-rt');
         Route::patch('/rt-areas/{rtArea}/chairman', [AdministrationController::class, 'updateRtChairman'])->name('rt.chairman');
         Route::patch('/rw-areas/{rwArea}/chairman', [AdministrationController::class, 'updateRwChairman'])->name('rw.chairman');
         Route::post('/users', [AdministrationController::class, 'storeUser'])->name('users.store');

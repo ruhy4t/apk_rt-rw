@@ -8,6 +8,7 @@ use App\Models\RtArea;
 use App\Models\RwArea;
 use App\Models\User;
 use App\Services\AreaAccess;
+use App\Services\RwIdentity;
 use App\Services\UserSessions;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,12 @@ class AdministrationController extends Controller
     {
         $actor = $request->user();
         $rwAreas = RwArea::query();
+        if ($request->routeIs('admin.setup') && $actor->hasRole('super_admin')) {
+            $rwAreas->select('rw_areas.*')->selectSub(
+                User::query()->selectRaw('COUNT(*)')->whereColumn('users.rw_area_id', 'rw_areas.id'),
+                'assigned_rw_accounts_count',
+            );
+        }
         if ($actor->hasRole('rw_operator')) {
             $rwAreas->whereKey($actor->rw_area_id ?? 0);
         } elseif ($actor->hasRole('rt_operator')) {
@@ -31,6 +38,7 @@ class AdministrationController extends Controller
         }
 
         return view('management.administration', [
+            'rwIdentityReady' => $request->routeIs('admin.setup') && $actor->hasRole('super_admin') && RwIdentity::ready(),
             'chairmanRtReady' => $request->routeIs('admin.setup') && $actor->hasRole('super_admin') && Schema::hasColumn('rt_areas', 'chairman_name'),
             'chairmanRwReady' => $request->routeIs('admin.setup') && $actor->hasRole('super_admin') && Schema::hasColumn('rw_areas', 'chairman_name'),
             'rwAreas' => $rwAreas->with(['rtAreas' => function ($query) use ($actor) {
@@ -58,7 +66,9 @@ class AdministrationController extends Controller
             'code' => ['required', 'string', 'max:32', 'unique:rw_areas,code'],
             'name' => ['required', 'string', 'max:120'],
             'chairman_name' => ['nullable', 'string', 'max:160'],
-        ]);
+            ...RwIdentity::rules(RwIdentity::ready()),
+        ], RwIdentity::messages(), RwIdentity::attributes());
+        $data = RwIdentity::forStorage($data);
         $data = $this->chairmanCreationData('rw_areas', $data);
 
         DB::transaction(function () use ($request, $data) {
@@ -134,7 +144,11 @@ class AdministrationController extends Controller
                 $data = $request->validate([
                     'code' => ['required', 'string', 'max:32', $unique],
                     'name' => ['required', 'string', 'max:120'],
-                ], ['code.unique' => 'Kode wilayah tersebut sudah digunakan. Gunakan kode lain.']);
+                    ...($locked instanceof RwArea ? RwIdentity::rules($request->hasAny(RwIdentity::FIELDS)) : []),
+                ], ['code.unique' => 'Kode wilayah tersebut sudah digunakan. Gunakan kode lain.', ...RwIdentity::messages()], RwIdentity::attributes());
+                if ($locked instanceof RwArea) {
+                    $data = RwIdentity::forStorage($data);
+                }
                 $locked->update($data);
                 AuditEvent::record($request->user(), $locked instanceof RtArea ? 'rt_area.updated' : 'rw_area.updated', $locked);
             });

@@ -27,7 +27,7 @@ class UserManagementTest extends TestCase
             ->assertSee('edit-user-'.$target->id)
             ->assertDontSee('Tambah wilayah RW');
         $this->get(route('admin.setup'))->assertOk()
-            ->assertSee('Tambah wilayah RW')->assertSee('Wilayah terdaftar')
+            ->assertSee('Tambah wilayah RW')->assertSee('1. Identitas RW')->assertSee('2. Daftar RT')
             ->assertDontSee('Akun aplikasi')->assertDontSee('Tambah pengguna');
     }
 

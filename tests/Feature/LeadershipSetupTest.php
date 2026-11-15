@@ -25,7 +25,7 @@ class LeadershipSetupTest extends TestCase
     public function test_regions_can_be_created_without_chairmen_or_resident_accounts(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'super_admin']));
-        $this->post(route('admin.rw.store'), ['code' => '01', 'name' => 'RW Uji'])->assertSessionHasNoErrors();
+        $this->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '01', 'name' => 'RW Uji'])->assertSessionHasNoErrors();
         $rw = RwArea::query()->firstOrFail();
         $this->post(route('admin.rt.store'), ['rw_area_id' => $rw->id, 'code' => '05', 'name' => 'RT Uji'])->assertSessionHasNoErrors();
         $this->assertNull($rw->chairman_name);
@@ -39,7 +39,7 @@ class LeadershipSetupTest extends TestCase
     {
         config(['personal_data.encryption_enabled' => false]);
         $this->actingAs(User::factory()->create(['role' => 'super_admin']));
-        $this->post(route('admin.rw.store'), ['code' => '01', 'name' => 'RW Uji', 'chairman_name' => 'Ketua RW Sintetis'])->assertSessionHasNoErrors();
+        $this->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '01', 'name' => 'RW Uji', 'chairman_name' => 'Ketua RW Sintetis'])->assertSessionHasNoErrors();
         $rw = RwArea::query()->firstOrFail();
         $this->post(route('admin.rt.store'), ['rw_area_id' => $rw->id, 'code' => '05', 'name' => 'RT Uji', 'chairman_name' => 'Ketua RT Sintetis'])->assertSessionHasNoErrors();
         $rt = RtArea::query()->firstOrFail();

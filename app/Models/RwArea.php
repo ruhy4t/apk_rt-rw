@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RwArea extends Model
 {
-    protected $fillable = ['code', 'name', 'chairman_name'];
+    protected $fillable = ['code', 'name', 'chairman_name', 'village_name', 'district_name', 'city_name'];
 
     protected $hidden = ['chairman_name'];
 

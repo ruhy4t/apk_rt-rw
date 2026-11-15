@@ -10,8 +10,9 @@
 -- Jangan jalankan bersamaan dengan migrasi atau import SQL lain.
 -- DDL tidak menjadi satu transaksi yang dapat di-rollback seluruhnya.
 -- Isi: pemeriksaan awal, akun/identitas warga, kolom enkripsi, tabel galeri,
--- nama Ketua RT/RW, identitas penandatangan saat penerbitan, dan pemeriksaan
--- hasil. Nama kolom/indeks/tabel yang ada akan dilewati.
+-- nama Ketua RT/RW, identitas penandatangan saat penerbitan, identitas
+-- administratif RW (Kelurahan/Desa, Kecamatan, Kota/Kabupaten), dan verifikasi.
+-- Nama kolom/indeks/tabel yang ada akan dilewati.
 -- Definisi yang sudah ada tidak diam-diam diperbaiki; periksa hasil query.
 -- Tidak ada penghapusan/perubahan isi record warga atau perubahan secret.
 -- TIDAK mengaktifkan enkripsi aplikasi atau mengenkripsi data lama.
@@ -435,3 +436,48 @@ WHERE TABLE_SCHEMA = DATABASE()
        OR (TABLE_NAME IN ('service_requests','announcements','community_events') AND COLUMN_NAME = 'signatory_data'))
 ORDER BY TABLE_NAME, COLUMN_NAME;
 -- Expected: exactly five rows, every row OK. Missing rows require completion.
+
+-- ============================================================
+-- IDENTITAS ADMINISTRATIF RW - Kelurahan/Desa, Kecamatan, Kota/Kabupaten
+-- ============================================================
+-- Nama wilayah administratif adalah identitas organisasi publik, bukan
+-- alamat rumah atau data pribadi warga. Tidak ada pengisian data otomatis.
+
+
+SET @apk_rt_ddl = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rw_areas' AND COLUMN_NAME = 'village_name'),
+    'SELECT ''SKIP: rw_areas.village_name already exists; verify its definition'' AS status',
+    'ALTER TABLE `rw_areas` ADD COLUMN `village_name` VARCHAR(120) NULL'
+);
+PREPARE apk_rt_stmt FROM @apk_rt_ddl;
+EXECUTE apk_rt_stmt;
+DEALLOCATE PREPARE apk_rt_stmt;
+
+
+SET @apk_rt_ddl = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rw_areas' AND COLUMN_NAME = 'district_name'),
+    'SELECT ''SKIP: rw_areas.district_name already exists; verify its definition'' AS status',
+    'ALTER TABLE `rw_areas` ADD COLUMN `district_name` VARCHAR(120) NULL'
+);
+PREPARE apk_rt_stmt FROM @apk_rt_ddl;
+EXECUTE apk_rt_stmt;
+DEALLOCATE PREPARE apk_rt_stmt;
+
+
+SET @apk_rt_ddl = IF(
+    EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rw_areas' AND COLUMN_NAME = 'city_name'),
+    'SELECT ''SKIP: rw_areas.city_name already exists; verify its definition'' AS status',
+    'ALTER TABLE `rw_areas` ADD COLUMN `city_name` VARCHAR(120) NULL'
+);
+PREPARE apk_rt_stmt FROM @apk_rt_ddl;
+EXECUTE apk_rt_stmt;
+DEALLOCATE PREPARE apk_rt_stmt;
+
+
+SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE,
+       CASE WHEN DATA_TYPE = 'varchar' AND CHARACTER_MAXIMUM_LENGTH = 120 AND IS_NULLABLE = 'YES' THEN 'OK' ELSE 'REVIEW_REQUIRED' END AS rw_identity_schema_status
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rw_areas'
+  AND COLUMN_NAME IN ('village_name','district_name','city_name')
+ORDER BY COLUMN_NAME;
+-- Expected: exactly three rows, every row OK. Missing rows require completion.

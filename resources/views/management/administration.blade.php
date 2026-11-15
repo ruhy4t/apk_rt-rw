@@ -4,16 +4,20 @@
 
 @section('content')
     <h1>{{ request()->routeIs('users.index') ? 'Pengguna' : 'Pengaturan wilayah' }}</h1>
-    <p class="mt-2 text-sm text-slate-600">{{ request()->routeIs('users.index') ? 'Kelola akun sesuai wilayah yang ditugaskan. Kata sandi awal dan hasil reset wajib diganti saat masuk.' : 'Aplikasi ini melayani satu RW dengan beberapa RT. Tetapkan RW sekali, lalu kelola daftar RT di bawahnya.' }}</p>
+    <p class="mt-2 text-sm text-slate-600">{{ request()->routeIs('users.index') ? 'Kelola akun sesuai wilayah yang ditugaskan. Kata sandi awal dan hasil reset wajib diganti saat masuk.' : 'Isi identitas satu RW, lalu tambahkan RT yang berada di bawah RW tersebut. Nama wilayah dan nama ketua diisi pada bagian yang berbeda.' }}</p>
 
     @if (request()->routeIs('admin.setup') && auth()->user()->hasRole('super_admin'))
+    <ol class="mt-6 flex flex-wrap gap-4 text-sm" aria-label="Urutan pengaturan wilayah">
+        <li><a class="text-link" href="#rw-identity">1. Identitas RW</a></li>
+        <li><a class="text-link" href="#rt-list">2. Daftar RT</a></li>
+    </ol>
     @unless ($chairmanRtReady && $chairmanRwReady)
         <div class="notice notice-error mt-6" role="status">Pengaturan Ketua RT/RW belum aktif. Terapkan pembaruan database dari file UPDATE-DATABASE.sql terlebih dahulu. Wilayah masih dapat dibuat tanpa nama ketua.</div>
     @endunless
     @if ($rwAreas->count() > 1)
-        <div class="notice notice-error mt-6" role="alert">Data lama masih berisi lebih dari satu RW. Penambahan wilayah dinonaktifkan sampai RW yang digunakan ditentukan. Data lama tetap dipertahankan.</div>
+        <div class="notice notice-error mt-6" role="alert"><p class="font-semibold">Tercatat {{ $rwAreas->count() }} RW, bukan {{ $rwAreas->count() }} RT.</p><p class="mt-2">Data lama masih berisi lebih dari satu RW. Karena aplikasi memakai satu RW, Tambah RT baru tersedia setelah susunan ini dikoreksi. Jika suatu baris seharusnya RT, gunakan Koreksi menjadi RT pada baris tersebut. Data yang sudah terhubung harus diperiksa terlebih dahulu.</p></div>
     @elseif ($rwAreas->count() === 1)
-        <p class="mt-6 text-sm text-slate-600">RW terdaftar: <strong class="text-slate-900">{{ $rwAreas->first()->name }} · {{ $rwAreas->first()->code }}</strong>. Penambahan RW lain tidak tersedia.</p>
+        <p class="mt-6 text-sm text-slate-600">RW yang digunakan: <strong class="text-slate-900">{{ $rwAreas->first()->name }} · {{ $rwAreas->first()->code }}</strong>. RT baru ditambahkan ke RW ini.</p>
     @endif
     <div class="mt-6 flex flex-wrap gap-3">
         @if ($rwAreas->isEmpty())
@@ -42,6 +46,7 @@
                 <label class="text-sm font-medium">Nama wilayah RW
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="name" maxlength="120" required>
                 </label>
+                <div class="space-y-3 sm:col-span-2"><x-rw-identity-fields :ready="$rwIdentityReady" /></div>
                 <label class="text-sm font-medium sm:col-span-2">Nama Ketua RW (opsional)
                     <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="chairman_name" maxlength="160" autocomplete="off" @disabled(!$chairmanRwReady)>
                 </label>
@@ -168,13 +173,21 @@
     @endif
 
     @if (request()->routeIs('admin.setup') && auth()->user()->hasRole('super_admin'))
-    <section class="mt-8">
-        <h2 class="text-lg font-bold">Wilayah terdaftar</h2>
-        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <section id="rw-identity" class="mt-8">
+        <div class="section-heading"><h2 class="text-lg font-bold">1. Identitas RW</h2><span>Satu RW untuk aplikasi ini</span></div>
+        <p class="mb-4 text-sm text-slate-600">Kode dan nama RW, alamat administrasi, serta Ketua RW ditetapkan di bagian ini. Daftar RT ada pada bagian berikutnya.</p>
+        <div class="grid gap-4 {{ $rwAreas->count() > 1 ? 'lg:grid-cols-2' : '' }}">
             @forelse ($rwAreas as $rw)
-                <article class="rounded-lg border border-slate-200 bg-white p-4">
-                    <h3 class="font-semibold">{{ $rw->name }} · {{ $rw->code }}</h3>
-                    <x-area-editor :area="$rw" level="RW" />
+                <article class="panel">
+                    <h3 class="text-lg font-semibold">{{ $rw->name }} · {{ $rw->code }}</h3>
+                    <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                        <div><dt class="text-slate-500">Kode RW</dt><dd class="font-medium">{{ $rw->code }}</dd></div>
+                        <div><dt class="text-slate-500">Nama wilayah RW</dt><dd class="font-medium">{{ $rw->name }}</dd></div>
+                        @foreach (['village_name' => 'Kelurahan / Desa', 'district_name' => 'Kecamatan', 'city_name' => 'Kota / Kabupaten'] as $field => $label)
+                            <div><dt class="text-slate-500">{{ $label }}</dt><dd class="font-medium">{{ $rwIdentityReady && $rw->getAttribute($field) ? $rw->getAttribute($field) : 'Belum diisi' }}</dd></div>
+                        @endforeach
+                    </dl>
+                    <x-area-editor :area="$rw" level="RW" :identity-ready="$rwIdentityReady" />
                     <p class="mt-2 text-sm text-slate-600">Ketua RW: <strong class="text-slate-900">{{ $chairmanRwReady && $rw->chairman_name ? $rw->chairman_name : 'Belum ditetapkan' }}</strong></p>
                     @if ($chairmanRwReady)
                         <details class="edit-section" @if($errors->any() && old('_form') === 'chairman-rw-'.$rw->id) open @endif>
@@ -190,11 +203,12 @@
                             </form>
                         </details>
                     @endif
-                    <ul class="mt-2 space-y-1 text-sm text-slate-600">
-                        @forelse ($rw->rtAreas as $rt)
-                            <li class="border-t border-slate-200 py-3">
-                                <strong class="text-slate-900">{{ $rt->name }} · {{ $rt->code }}</strong>
-                                <x-area-editor :area="$rt" level="RT" />
+                    @if ($rwAreas->count() > 1)
+                        <div class="mt-5 border-t border-slate-200 pt-4">
+                            <p class="text-sm font-semibold">RT yang sudah terhubung: {{ $rw->rtAreas->count() }}</p>
+                            <ul class="mt-2 space-y-2 text-sm">
+                                @forelse ($rw->rtAreas as $rt)
+                                    <li><strong>{{ $rt->name }} · {{ $rt->code }}</strong><x-area-editor :area="$rt" level="RT" />
                                 <p class="mt-1">Ketua RT: <strong class="text-slate-900">{{ $chairmanRtReady && $rt->chairman_name ? $rt->chairman_name : 'Belum ditetapkan' }}</strong></p>
                                 @if ($chairmanRtReady)
                                     <details class="edit-section" @if($errors->any() && old('_form') === 'chairman-rt-'.$rt->id) open @endif>
@@ -210,16 +224,79 @@
                                         </form>
                                     </details>
                                 @endif
-                            </li>
-                        @empty
-                            <li>Belum ada RT.</li>
-                        @endforelse
-                    </ul>
+                                    </li>
+                                @empty<li>Belum ada RT.</li>@endforelse
+                            </ul>
+                        </div>
+                        @php
+                            $hasIdentity = $rwIdentityReady && collect(['village_name', 'district_name', 'city_name'])->contains(fn ($field) => filled($rw->getAttribute($field)));
+                            $canCorrect = $rw->rtAreas->isEmpty() && (int) $rw->assigned_rw_accounts_count === 0 && ! $hasIdentity;
+                            $correctionFormId = 'correct-rw-'.$rw->id;
+                            $suggestedRtCode = preg_replace('/^RT[.\s_-]*/i', '', $rw->code);
+                        @endphp
+                        @if ($canCorrect)
+                            <details class="edit-section" @if($errors->any() && old('_form') === $correctionFormId) open @endif>
+                                <summary><x-icon name="edit" />Koreksi menjadi RT</summary>
+                                <p class="mt-3 text-sm text-slate-600">Gunakan hanya jika baris RW ini memang salah dibuat dan seharusnya merupakan RT. Periksa RW tujuan sebelum menyimpan.</p>
+                                <form class="mt-3 space-y-3" method="POST" action="{{ route('admin.rw.convert-to-rt', $rw) }}">
+                                    @csrf<input type="hidden" name="_form" value="{{ $correctionFormId }}">
+                                    <label class="block text-sm font-medium">RW tujuan untuk RT ini
+                                        <select class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="target_rw_area_id" required>
+                                            <option value="">Pilih RW utama</option>
+                                            @foreach ($rwAreas as $targetRw)
+                                                @if ($targetRw->id !== $rw->id)<option value="{{ $targetRw->id }}" @selected(old('_form') === $correctionFormId && (string) old('target_rw_area_id') === (string) $targetRw->id)>{{ $targetRw->name }} · {{ $targetRw->code }}</option>@endif
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="block text-sm font-medium">Kode RT yang benar<input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="code" value="{{ old('_form') === $correctionFormId ? old('code', $suggestedRtCode) : $suggestedRtCode }}" maxlength="32" required></label>
+                                    <label class="block text-sm font-medium">Nama wilayah RT<input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="name" value="RT {{ $suggestedRtCode }}" maxlength="120" required></label>
+                                    <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm_conversion" value="1" required><span>Saya setuju baris RW {{ $rw->code }} ini dihapus dan diganti dengan RT baru di bawah RW tujuan yang dipilih, setelah pemeriksaan data berhasil.</span></label>
+                                    <button class="button button-primary" type="submit"><x-icon name="save" /><span data-button-label>Koreksi RW ini menjadi RT</span></button>
+                                </form>
+                            </details>
+                        @else
+                            <p class="mt-4 text-xs text-slate-600">Koreksi menjadi RT belum tersedia untuk baris ini karena sudah memiliki RT, akun RW, atau identitas administrasi. Data tersebut perlu diperiksa terlebih dahulu.</p>
+                        @endif
+                    @endif
                 </article>
             @empty
-                <p class="text-sm text-slate-500">Belum ada wilayah RW.</p>
+                <p class="empty-state">Identitas RW belum dibuat. Gunakan Tambah wilayah RW di atas untuk memulai.</p>
             @endforelse
         </div>
+    </section>
+    <section id="rt-list" class="mt-8">
+        <div class="section-heading"><h2 class="text-lg font-bold">2. Daftar RT</h2>
+            @if ($rwAreas->count() === 1)<button class="button button-primary" type="button" data-open-dialog="create-rt"><x-icon name="plus" /><span data-button-label>Tambah RT baru</span></button>
+            @else<button class="button" type="button" disabled aria-disabled="true"><x-icon name="plus" />Tambah RT baru</button>@endif
+        </div>
+        @if ($rwAreas->count() === 1)
+            <p class="mb-4 text-sm text-slate-600">Semua RT berikut berada di bawah {{ $rwAreas->first()->name }} · {{ $rwAreas->first()->code }}. Klik Tambah RT baru untuk menambahkan nomor RT lain.</p>
+            <div class="grid gap-4 md:grid-cols-2">
+                @forelse ($rwAreas->first()->rtAreas as $rt)
+                    <article class="panel"><h3 class="font-semibold">{{ $rt->name }} · {{ $rt->code }}</h3><x-area-editor :area="$rt" level="RT" />
+                                <p class="mt-1">Ketua RT: <strong class="text-slate-900">{{ $chairmanRtReady && $rt->chairman_name ? $rt->chairman_name : 'Belum ditetapkan' }}</strong></p>
+                                @if ($chairmanRtReady)
+                                    <details class="edit-section" @if($errors->any() && old('_form') === 'chairman-rt-'.$rt->id) open @endif>
+                                        <summary><x-icon name="edit" />Tetapkan / ganti Ketua RT</summary>
+                                        <form class="mt-3 space-y-3" method="POST" action="{{ route('admin.rt.chairman', $rt) }}">
+                                            @csrf @method('PATCH')
+                                            <input type="hidden" name="_form" value="chairman-rt-{{ $rt->id }}">
+                                            <label class="block font-medium">Nama Ketua RT
+                                                <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" name="chairman_name" value="{{ $rt->chairman_name }}" maxlength="160" required autocomplete="off">
+                                            </label>
+                                            <p class="text-xs text-slate-500">Untuk tanda tangan manual. Penggantian ketua tidak mengubah nama pada dokumen yang sudah diterbitkan.</p>
+                                            <button class="button button-primary" type="submit"><x-icon name="save" /><span data-button-label>Simpan Ketua RT</span></button>
+                                        </form>
+                                    </details>
+                                @endif
+                    </article>
+                @empty<p class="empty-state">Belum ada RT. Klik Tambah RT baru untuk membuat RT pertama.</p>@endforelse
+            </div>
+        @elseif ($rwAreas->isEmpty())
+            <p class="empty-state">Isi identitas RW terlebih dahulu. Setelah RW tersimpan, tombol Tambah RT baru akan aktif.</p>
+        @else
+            <p class="empty-state">Tambah RT belum aktif karena masih ada {{ $rwAreas->count() }} RW. Koreksi baris yang seharusnya RT melalui bagian Identitas RW di atas. Setelah tersisa satu RW, tombol ini akan aktif.</p>
+        @endif
     </section>
     @endif
 

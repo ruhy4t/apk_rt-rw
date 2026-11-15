@@ -19,9 +19,9 @@ class SingleRwTest extends TestCase
             ->assertSee('data-open-dialog="create-rw"', false)
             ->assertDontSee('data-open-dialog="create-rt"', false);
 
-        $this->post(route('admin.rw.store'), ['code' => '01', 'name' => 'RW Uji'])
+        $this->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '01', 'name' => 'RW Uji'])
             ->assertRedirect()->assertSessionHasNoErrors();
-        $this->post(route('admin.rw.store'), ['code' => '02', 'name' => 'RW Tambahan'])
+        $this->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '02', 'name' => 'RW Tambahan'])
             ->assertSessionHasErrors('rw');
 
         $this->assertDatabaseCount('rw_areas', 1);
@@ -60,7 +60,7 @@ class SingleRwTest extends TestCase
             ->assertSee('RW Lama Satu')->assertSee('RW Lama Dua')
             ->assertDontSee('data-open-dialog="create-rw"', false)
             ->assertDontSee('data-open-dialog="create-rt"', false);
-        $this->post(route('admin.rw.store'), ['code' => '03', 'name' => 'RW Baru'])
+        $this->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '03', 'name' => 'RW Baru'])
             ->assertSessionHasErrors('rw');
         $this->post(route('admin.rt.store'), ['rw_area_id' => $first->id, 'code' => '01', 'name' => 'RT Baru'])
             ->assertSessionHasErrors('rw_area_id');
@@ -80,7 +80,7 @@ class SingleRwTest extends TestCase
             ['role' => 'rt_operator', 'rt_area_id' => $rt->id],
         ] as $attributes) {
             $this->actingAs(User::factory()->create($attributes));
-            $this->post(route('admin.rw.store'), ['code' => '02', 'name' => 'Dilarang'])->assertForbidden();
+            $this->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '02', 'name' => 'Dilarang'])->assertForbidden();
             $this->post(route('admin.rt.store'), ['rw_area_id' => $rw->id, 'code' => '02', 'name' => 'Dilarang'])->assertForbidden();
         }
         $this->assertDatabaseCount('rw_areas', 1);
@@ -92,9 +92,9 @@ class SingleRwTest extends TestCase
         config(['personal_data.encryption_enabled' => true]);
         $firstAdmin = User::factory()->create(['role' => 'super_admin']);
         $otherAdmin = User::factory()->create(['role' => 'super_admin']);
-        $this->actingAs($otherAdmin)->post(route('admin.rw.store'), ['code' => '01', 'name' => 'RW Uji'])
+        $this->actingAs($otherAdmin)->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '01', 'name' => 'RW Uji'])
             ->assertRedirect()->assertSessionHasNoErrors();
-        $this->actingAs($firstAdmin)->post(route('admin.rw.store'), ['code' => '02', 'name' => 'RW Tambahan'])
+        $this->actingAs($firstAdmin)->post(route('admin.rw.store'), ['village_name' => 'Kelurahan Uji', 'district_name' => 'Kecamatan Uji', 'city_name' => 'Kota Uji', 'code' => '02', 'name' => 'RW Tambahan'])
             ->assertSessionHasErrors('rw');
         $this->assertDatabaseCount('rw_areas', 1);
     }

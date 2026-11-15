@@ -4,6 +4,12 @@ Nama Ketua RT dan Ketua RW dicatat terpisah dari data warga dan akun petugas. Pe
 
 ## Alur penggunaan
 
+Halaman Pengaturan wilayah memisahkan **1. Identitas RW** dan **2. Daftar RT**. Isi kode/nama RW, Kelurahan/Desa, Kecamatan, Kota/Kabupaten, dan Ketua RW pada bagian pertama. Tiga identitas administrasi wajib lengkap saat membuat RW baru atau saat dikirim melalui formulir edit. RT mewarisi identitas administrasi RW induknya; isi nomor/nama RT dan Ketua RT melalui bagian kedua, lalu gunakan **Tambah RT baru** untuk RT berikutnya.
+
+Bila data lama berisi beberapa RW karena RT keliru dimasukkan sebagai RW, tombol Tambah RT tetap terlihat tetapi nonaktif. Super Admin dapat membuka **Koreksi menjadi RT** pada baris yang memenuhi syarat, memilih RW tujuan, memeriksa kode/nama RT, dan menyetujui koreksi. Operasi ini membuat RT baru lalu menghapus catatan RW asal dalam satu transaksi. Proses ditolak bila sumber masih memiliki RT, akun RW, identitas administrasi, atau catatan penandatangan terkait. Riwayat penandatangan tidak dipindah atau ditulis ulang. Tidak ada koreksi otomatis oleh impor SQL.
+
+Untuk kasus RW utama 05 dengan RT.02 dan 001 yang salah tercatat sebagai RW, koreksi kedua baris tersebut ke RW 05 satu per satu sebelum mengisi identitas RW utama. Setelah tersisa satu RW, tombol Tambah RT baru aktif. Jika ada penolakan keterkaitan, hentikan dan periksa datanya; jangan menghapus tabel/baris melalui SQL untuk melewati pemeriksaan.
+
 1. Tambahkan satu RW dan wilayah RT yang diperlukan. Wilayah boleh disimpan tanpa ketua; statusnya **Belum ditetapkan**.
 2. Isi nama Ketua RW untuk konten seluruh RW, dan nama Ketua RT untuk masing-masing RT. Nama tidak harus sudah ada pada data warga dan tidak memerlukan akun login.
 3. Pengumuman dan agenda dapat disimpan sebagai draf sebelum ketua ditetapkan. Penerbitan konten tingkat RT memerlukan Ketua RT terkait. Konten seluruh RW memerlukan Ketua RW, bukan salah satu Ketua RT.
